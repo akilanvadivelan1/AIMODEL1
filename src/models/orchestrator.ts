@@ -109,14 +109,29 @@ async function callModel(
   }
 }
 
+/**
+ * Builds the conversational, ChatGPT-style paragraph answer shown in Unified view.
+ * MOCKED: it cannot actually know facts yet, so it returns a natural-sounding
+ * placeholder paragraph. When the live APIs are wired into callModel(), this
+ * same slot receives the real synthesized answer — the shape never changes.
+ */
 function buildUnified(prompt: string, participants: ModelId[]): string {
-  const names = participants.map((m) => MODELS[m].short).join(", ");
-  const p = truncate(prompt.trim() || "the task", 120);
-  if (participants.length === 1) {
-    const info = MODELS[participants[0]];
-    return `${info.short} handled "${p}" as ${info.role.toLowerCase()}. ${info.mechanism}. (mocked — live ${info.vendor} API wires in later.)`;
-  }
-  return `OmniMinds synthesis for "${p}": specified by Kiro (EARS), grounded by Gemini (live citations), audited by Claude (edge cases), and implemented + verified by ChatGPT (sandbox). Models involved: ${names}. (mocked — live APIs wire in later.)`;
+  const p = prompt.trim() || "your question";
+  const multi = participants.length > 1;
+
+  const opener = multi
+    ? `Here's a combined answer to "${p}", drawing on each model's strengths.`
+    : `Here's my take on "${p}".`;
+
+  const body =
+    `In a live deployment this is where you'd get a full, natural-language response, written as flowing paragraphs the way ChatGPT answers. ` +
+    (multi
+      ? `Behind the scenes the four models cooperate: Kiro frames the problem, Gemini pulls in grounded up-to-date facts, Claude reasons through the nuances, and ChatGPT pulls it together into this clear reply. You can expand "Pipeline View" anytime to see each model's individual contribution.`
+      : `Right now you're routed to a single model, so you'd get its direct answer in its own voice.`);
+
+  const note = `(This is a mocked response, so it can't provide real facts yet. Once the ${multi ? "four APIs are" : "API is"} connected, this exact paragraph is replaced by the real answer.)`;
+
+  return `${opener} ${body}\n\n${note}`;
 }
 
 function truncate(s: string, n: number): string {

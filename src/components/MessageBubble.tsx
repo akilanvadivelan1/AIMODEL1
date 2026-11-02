@@ -52,14 +52,21 @@ export function MessageBubble({
             ))}
           </div>
         ) : (
-          <div className="space-y-3 rounded-xl border border-[#262626] bg-[#141414] p-4">
-            <p className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-[#cccccc] sm:text-sm">
-              {turn.unified}
-            </p>
-            <div className="flex items-center justify-between border-t border-[#262626] pt-2 font-mono text-[10px] text-[#888888]">
-              <span>Synthesized through {turn.participants.length} model lens(es)</span>
-              <span className="rounded border border-white px-1.5 text-white">VERIFIED</span>
+          <div className="space-y-3">
+            <div className="space-y-3 whitespace-pre-wrap text-[13px] leading-7 text-[#e3e3e3] sm:text-sm">
+              {turn.unified.split("\n\n").map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
             </div>
+            {turn.participants.length > 1 && (
+              <div className="flex items-center gap-2 font-mono text-[10px] text-[#666666]">
+                <span>Synthesized across {turn.participants.length} models</span>
+                <span className="text-[#444444]">·</span>
+                <span className="text-[#888888]">
+                  switch to Pipeline View to see each stage
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>

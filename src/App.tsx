@@ -35,7 +35,7 @@ export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(load);
   const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
   const [mode, setMode] = useState<RouteMode>("quad");
-  const [viewMode, setViewMode] = useState<ViewMode>("pipeline");
+  const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [busyMsgId, setBusyMsgId] = useState<string | null>(null);
