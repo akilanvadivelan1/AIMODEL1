@@ -2,69 +2,89 @@ import type { ModelId, ModelInfo } from "./types";
 
 /**
  * The registry of models our chatbot can route to.
- * Strengths double as documentation and as the basis for future auto-routing.
+ * Each model has a role in the OmniMinds pipeline + its transferable superpower.
+ * Strengths double as documentation and as the basis for routing.
  */
 export const MODELS: Record<ModelId, ModelInfo> = {
-  claude: {
-    id: "claude",
-    name: "Claude",
-    vendor: "Anthropic",
-    tagline: "Reasoning, coding, long-form writing",
+  kiro: {
+    id: "kiro",
+    name: "Kiro SDD Engine",
+    short: "Kiro",
+    vendor: "AWS",
+    stage: 1,
+    stageLabel: "Kiro SDD Architect",
+    badge: "EARS SPEC",
+    role: "System Architect",
+    tagline: "Spec-Driven Development, EARS criteria & steering guardrails",
+    superpower: "Spec-Driven Development (SDD) & EARS syntax",
+    mechanism: "Generates testable specs before code emission",
     strengths: [
-      "Multi-file coding and refactoring",
-      "Following nuanced instructions",
-      "High-quality long-form writing",
-      "Large context, stays coherent",
+      "Enforces formal EARS requirement models",
+      "Injects pre-execution steering hooks",
+      "Requires phased task roadmaps first",
+      "Prevents code hallucinations",
     ],
-    accent: "bg-orange-500",
-    accentText: "text-orange-600",
-    accentRing: "ring-orange-500",
   },
   gemini: {
     id: "gemini",
-    name: "Gemini",
+    name: "Gemini 2.5 Core",
+    short: "Gemini",
     vendor: "Google",
-    tagline: "Multimodal, huge context, grounded",
+    stage: 2,
+    stageLabel: "Gemini 2.5 Grounding Lens",
+    badge: "2M RECALL",
+    role: "Research Intelligence",
+    tagline: "2M token mega-context & real-time live grounding",
+    superpower: "2M+ mega context & real-time web search",
+    mechanism: "Deep document caching & live source grounding",
     strengths: [
-      "Native image / audio / video / PDF input",
-      "Among the largest context windows",
-      "Search-grounded, fresh answers",
-      "Fast and cheap at scale (Flash)",
+      "Ingests multi-gigabyte repos, PDFs, transcripts",
+      "Grounded in real-time web citations",
+      "Near-perfect needle retrieval",
+      "Synthesizes cross-file dependencies",
     ],
-    accent: "bg-blue-500",
-    accentText: "text-blue-600",
-    accentRing: "ring-blue-500",
+  },
+  claude: {
+    id: "claude",
+    name: "Claude 3.7 Core",
+    short: "Claude",
+    vendor: "Anthropic",
+    stage: 3,
+    stageLabel: "Claude 3.7 Deep Reasoning",
+    badge: "<THINK>",
+    role: "Principal Critic",
+    tagline: "Extended scratchpad reasoning & deep vulnerability critique",
+    superpower: "Extended <thinking> scratchpad & edge reasoning",
+    mechanism: "Analyzes race conditions & security vectors",
+    strengths: [
+      "Extended chain-of-thought deliberation",
+      "Spots subtle boundary conditions",
+      "Finds side-channel vulnerabilities",
+      "Natural, readable technical prose",
+    ],
   },
   chatgpt: {
     id: "chatgpt",
-    name: "ChatGPT",
+    name: "ChatGPT-4o Core",
+    short: "ChatGPT",
     vendor: "OpenAI",
-    tagline: "Versatile all-rounder, tools, voice",
+    stage: 4,
+    stageLabel: "ChatGPT-4o Execution Runner",
+    badge: "SANDBOX",
+    role: "Tactical Operator",
+    tagline: "Tactical execution, function calling & sandboxed verification",
+    superpower: "Function calling ecosystem & sandbox runner",
+    mechanism: "Executes code & runs assertions in a test runner",
     strengths: [
-      "Broad tool / plugin ecosystem",
-      "Voice and realtime conversation",
-      "Built-in image generation",
-      "Reliable structured outputs (JSON)",
+      "Deterministic function calling",
+      "Code synthesis & sandbox test runs",
+      "Verifies math, regex, algorithms",
+      "Requirements to production endpoints",
     ],
-    accent: "bg-emerald-500",
-    accentText: "text-emerald-600",
-    accentRing: "ring-emerald-500",
-  },
-  kiro: {
-    id: "kiro",
-    name: "Kiro",
-    vendor: "AWS",
-    tagline: "Spec-driven, agentic repo work",
-    strengths: [
-      "Spec-driven feature builds",
-      "Agentic exploration and editing of real repos",
-      "Steering rules and event hooks",
-      "End-to-end coding workflows",
-    ],
-    accent: "bg-purple-500",
-    accentText: "text-purple-600",
-    accentRing: "ring-purple-500",
   },
 };
 
-export const MODEL_LIST: ModelInfo[] = Object.values(MODELS);
+/** Pipeline order: Kiro -> Gemini -> Claude -> ChatGPT. */
+export const PIPELINE_ORDER: ModelId[] = ["kiro", "gemini", "claude", "chatgpt"];
+
+export const MODEL_LIST: ModelInfo[] = PIPELINE_ORDER.map((id) => MODELS[id]);

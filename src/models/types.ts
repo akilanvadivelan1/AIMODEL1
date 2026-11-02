@@ -1,25 +1,53 @@
-export type ModelId = "claude" | "gemini" | "chatgpt" | "kiro";
+export type ModelId = "kiro" | "gemini" | "claude" | "chatgpt";
+
+/** Routing mode: a single model, or the full quad pipeline. */
+export type RouteMode = ModelId | "quad";
+
+/** How a multi-model answer is displayed. */
+export type ViewMode = "pipeline" | "unified";
 
 export interface ModelInfo {
   id: ModelId;
+  /** Full display name, e.g. "Claude 3.7 Core". */
   name: string;
+  /** Short name for pills/badges, e.g. "Claude". */
+  short: string;
   vendor: string;
-  /** Short tagline shown in the picker. */
+  /** 1-4, position in the pipeline. */
+  stage: number;
+  /** Label shown on the pipeline stage header. */
+  stageLabel: string;
+  /** Short badge text, e.g. "EARS SPEC". */
+  badge: string;
+  /** Role in the orchestration, e.g. "System Architect". */
+  role: string;
   tagline: string;
-  /** What this model is best at, used for the badge tooltip and auto-routing later. */
+  superpower: string;
+  mechanism: string;
   strengths: string[];
-  /** Tailwind classes for the model's accent color (badge, selector highlight). */
-  accent: string;
-  accentText: string;
-  accentRing: string;
+}
+
+/** One model's contribution to an orchestrated answer. */
+export interface StageOutput {
+  model: ModelId;
+  content: string;
+}
+
+export interface AssistantTurn {
+  /** Per-model stage outputs (always all 4 for quad; just one for single). */
+  stages: StageOutput[];
+  /** The merged, single-voice answer used in Unified view. */
+  unified: string;
+  /** Which models actually participated. */
+  participants: ModelId[];
 }
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  /** Which model produced this message (assistant messages only). */
-  model?: ModelId;
+  /** For assistant messages: the orchestrated multi-stage result. */
+  turn?: AssistantTurn;
   createdAt: number;
 }
 

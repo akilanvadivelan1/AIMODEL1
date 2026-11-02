@@ -1,18 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ChatMessage, Conversation, ModelId } from "./models/types";
-import { sendMessage } from "./models/provider";
-import { MODELS } from "./models/registry";
+import type {
+  AssistantTurn,
+  ChatMessage,
+  Conversation,
+  RouteMode,
+  StageOutput,
+  ViewMode,
+} from "./models/types";
+import { orchestrate } from "./models/orchestrator";
 import { Sidebar } from "./components/Sidebar";
-import { Composer } from "./components/Composer";
+import { ModelSwitcher } from "./components/ModelSwitcher";
+import { ViewToggle } from "./components/ViewToggle";
+import { StrengthsModal } from "./components/StrengthsModal";
 import { MessageBubble } from "./components/MessageBubble";
+import { Composer, type CapabilityKey } from "./components/Composer";
+import { Hero } from "./components/Hero";
 
-const STORAGE_KEY = "mmc.conversations.v1";
+const STORAGE_KEY = "omniminds.conversations.v1";
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function loadConversations(): Conversation[] {
+function load(): Conversation[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as Conversation[]) : [];
@@ -22,12 +32,20 @@ function loadConversations(): Conversation[] {
 }
 
 export default function App() {
-  const [conversations, setConversations] = useState<Conversation[]>(loadConversations);
-  const [activeId, setActiveId] = useState<string | null>(
-    () => loadConversations()[0]?.id ?? null
-  );
-  const [model, setModel] = useState<ModelId>("claude");
-  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>(load);
+  const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
+  const [mode, setMode] = useState<RouteMode>("quad");
+  const [viewMode, setViewMode] = useState<ViewMode>("pipeline");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [matrixOpen, setMatrixOpen] = useState(false);
+  const [busyMsgId, setBusyMsgId] = useState<string | null>(null);
+  const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>({
+    ears: true,
+    grounding: true,
+    thinking: true,
+    sandbox: true,
+  });
+
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -36,20 +54,22 @@ export default function App() {
     [conversations, activeId]
   );
 
-  // Persist to localStorage.
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
   }, [conversations]);
 
-  // Auto-scroll to bottom on new content.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [active?.messages, streamingId]);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [active?.messages, busyMsgId]);
+
+  function patch(id: string, fn: (c: Conversation) => Conversation) {
+    setConversations((prev) => prev.map((c) => (c.id === id ? fn(c) : c)));
+  }
 
   function newConversation(): string {
     const conv: Conversation = {
       id: uid(),
-      title: "New chat",
+      title: "New session",
       messages: [],
       createdAt: Date.now(),
     };
@@ -60,20 +80,14 @@ export default function App() {
 
   function deleteConversation(id: string) {
     setConversations((prev) => prev.filter((c) => c.id !== id));
-    setActiveId((cur) => {
-      if (cur !== id) return cur;
-      const rest = conversations.filter((c) => c.id !== id);
-      return rest[0]?.id ?? null;
-    });
-  }
-
-  function patchConversation(id: string, fn: (c: Conversation) => Conversation) {
-    setConversations((prev) => prev.map((c) => (c.id === id ? fn(c) : c)));
+    setActiveId((cur) => (cur === id ? null : cur));
   }
 
   async function handleSend(text: string) {
     let convId = activeId;
-    if (!convId) convId = newConversation();
+    if (!convId || !conversations.some((c) => c.id === convId)) {
+      convId = newConversation();
+    }
 
     const userMsg: ChatMessage = {
       id: uid(),
@@ -85,134 +99,175 @@ export default function App() {
       id: uid(),
       role: "assistant",
       content: "",
-      model,
+      turn: { stages: [], unified: "", participants: [] },
       createdAt: Date.now(),
     };
 
-    patchConversation(convId, (c) => ({
+    patch(convId, (c) => ({
       ...c,
       title: c.messages.length === 0 ? titleFrom(text) : c.title,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
-    setStreamingId(assistantMsg.id);
+    setBusyMsgId(assistantMsg.id);
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
-      const history = (conversations.find((c) => c.id === convId)?.messages ?? [])
-        .concat(userMsg);
-
-      await sendMessage({
-        model,
-        messages: history,
+      const result: AssistantTurn = await orchestrate({
+        mode,
+        prompt: text,
         signal: controller.signal,
-        onToken: (chunk) => {
-          patchConversation(convId!, (c) => ({
+        onStage: (stage: StageOutput) => {
+          patch(convId!, (c) => ({
             ...c,
             messages: c.messages.map((m) =>
-              m.id === assistantMsg.id ? { ...m, content: m.content + chunk } : m
+              m.id === assistantMsg.id
+                ? {
+                    ...m,
+                    turn: {
+                      ...(m.turn ?? { stages: [], unified: "", participants: [] }),
+                      stages: [...(m.turn?.stages ?? []), stage],
+                      participants: [...(m.turn?.participants ?? []), stage.model],
+                    },
+                  }
+                : m
             ),
           }));
         },
       });
+
+      patch(convId!, (c) => ({
+        ...c,
+        messages: c.messages.map((m) =>
+          m.id === assistantMsg.id ? { ...m, turn: result } : m
+        ),
+      }));
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        patchConversation(convId!, (c) => ({
+        patch(convId!, (c) => ({
           ...c,
           messages: c.messages.map((m) =>
             m.id === assistantMsg.id
-              ? { ...m, content: m.content + "\n\n[error generating response]" }
+              ? {
+                  ...m,
+                  turn: {
+                    stages: m.turn?.stages ?? [],
+                    unified: "[error generating response]",
+                    participants: m.turn?.participants ?? [],
+                  },
+                }
               : m
           ),
         }));
       }
     } finally {
-      setStreamingId(null);
+      setBusyMsgId(null);
       abortRef.current = null;
     }
   }
 
-  function stopStreaming() {
+  function stop() {
     abortRef.current?.abort();
   }
 
+  function toggleCapability(key: CapabilityKey) {
+    setCapabilities((c) => ({ ...c, [key]: !c[key] }));
+  }
+
   return (
-    <div className="flex h-full bg-slate-100 text-slate-900">
+    <div className="noir-texture flex min-h-screen text-sm antialiased">
       <Sidebar
+        open={sidebarOpen}
         conversations={conversations}
         activeId={activeId}
         onSelect={setActiveId}
         onNew={newConversation}
         onDelete={deleteConversation}
+        onToggle={() => setSidebarOpen((o) => !o)}
+        onOpenMatrix={() => setMatrixOpen(true)}
       />
 
-      <main className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-          <div>
-            <h1 className="text-sm font-semibold">Multi-Model Chat</h1>
-            <p className="text-xs text-slate-400">
-              Claude · Gemini · ChatGPT · Kiro — each routed to its strengths
-            </p>
+      <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-[#121212]">
+        {/* Header */}
+        <header className="z-20 flex h-14 items-center justify-between border-b border-[#222222] bg-[#121212]/95 px-4 backdrop-blur">
+          <div className="flex items-center space-x-3">
+            {!sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                title="Toggle sidebar"
+                className="rounded-lg p-1.5 text-[#888888] transition-colors hover:bg-[#1c1c1c] hover:text-white"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            )}
+            <ModelSwitcher value={mode} onChange={setMode} />
           </div>
-          {streamingId && (
+
+          <ViewToggle value={viewMode} onChange={setViewMode} />
+
+          <div className="flex items-center space-x-2">
             <button
-              type="button"
-              onClick={stopStreaming}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              onClick={() => setMatrixOpen(true)}
+              className="flex items-center space-x-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#cccccc] transition-all hover:border-white hover:bg-white hover:text-black"
             >
-              Stop
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span className="hidden md:inline">Strengths</span>
             </button>
-          )}
+            {busyMsgId ? (
+              <button
+                onClick={stop}
+                className="rounded-lg border border-[#333333] px-3 py-1.5 font-mono text-xs text-[#cccccc] hover:bg-[#1a1a1a]"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={() => active && deleteConversation(active.id)}
+                title="Clear current session"
+                className="rounded-lg border border-transparent p-1.5 text-[#888888] transition-all hover:border-[#333333] hover:bg-[#1a1a1a] hover:text-white"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+          </div>
         </header>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="mx-auto max-w-3xl space-y-4">
-            {!active || active.messages.length === 0 ? (
-              <EmptyState model={model} />
-            ) : (
-              active.messages.map((m) => (
+        {/* Chat area */}
+        <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
+          {!active || active.messages.length === 0 ? (
+            <Hero onStarter={handleSend} />
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-6 pb-28">
+              {active.messages.map((m) => (
                 <MessageBubble
                   key={m.id}
                   message={m}
-                  streaming={m.id === streamingId}
+                  viewMode={viewMode}
+                  streaming={m.id === busyMsgId}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <Composer
-          model={model}
-          onModelChange={setModel}
+          capabilities={capabilities}
+          onToggleCapability={toggleCapability}
           onSend={handleSend}
-          disabled={!!streamingId}
+          disabled={!!busyMsgId}
         />
       </main>
-    </div>
-  );
-}
 
-function EmptyState({ model }: { model: ModelId }) {
-  const info = MODELS[model];
-  return (
-    <div className="mx-auto mt-16 max-w-md text-center">
-      <h2 className="text-lg font-semibold text-slate-700">
-        Start a conversation
-      </h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Currently routing to{" "}
-        <span className={`font-medium ${info.accentText}`}>{info.name}</span>.
-        Pick a different model below the input anytime.
-      </p>
-      <ul className="mt-4 space-y-1 text-left text-sm text-slate-500">
-        {info.strengths.map((s) => (
-          <li key={s} className="flex items-start gap-2">
-            <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${info.accent}`} />
-            {s}
-          </li>
-        ))}
-      </ul>
+      <StrengthsModal open={matrixOpen} onClose={() => setMatrixOpen(false)} />
     </div>
   );
 }
