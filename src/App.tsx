@@ -15,6 +15,8 @@ import { StrengthsModal } from "./components/StrengthsModal";
 import { MessageBubble } from "./components/MessageBubble";
 import { Composer, type CapabilityKey } from "./components/Composer";
 import { Hero } from "./components/Hero";
+import { ApiKeyModal } from "./components/ApiKeyModal";
+import { getApiKey } from "./models/apiKey";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
 
@@ -38,6 +40,8 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [hasKey, setHasKey] = useState(() => !!getApiKey());
   const [busyMsgId, setBusyMsgId] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>({
     ears: true,
@@ -114,9 +118,19 @@ export default function App() {
     abortRef.current = controller;
 
     try {
+      const priorMessages =
+        conversations.find((c) => c.id === convId)?.messages ?? [];
+      const history = priorMessages
+        .filter((m) => m.role === "user" || (m.turn?.unified?.trim()?.length ?? 0) > 0)
+        .map((m) => ({
+          role: m.role,
+          content: m.role === "assistant" ? m.turn!.unified : m.content,
+        }));
+
       const result: AssistantTurn = await orchestrate({
         mode,
         prompt: text,
+        history,
         signal: controller.signal,
         onStage: (stage: StageOutput) => {
           patch(convId!, (c) => ({
@@ -210,6 +224,21 @@ export default function App() {
 
           <div className="flex items-center space-x-2">
             <button
+              onClick={() => setKeyModalOpen(true)}
+              title={hasKey ? "Gemini connected — manage key" : "Connect a real model (API key)"}
+              className={[
+                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                hasKey
+                  ? "border-white bg-white text-black"
+                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+              ].join(" ")}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+              </svg>
+              <span className="hidden md:inline">{hasKey ? "Connected" : "Connect"}</span>
+            </button>
+            <button
               onClick={() => setMatrixOpen(true)}
               className="flex items-center space-x-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#cccccc] transition-all hover:border-white hover:bg-white hover:text-black"
             >
@@ -268,6 +297,11 @@ export default function App() {
       </main>
 
       <StrengthsModal open={matrixOpen} onClose={() => setMatrixOpen(false)} />
+      <ApiKeyModal
+        open={keyModalOpen}
+        onClose={() => setKeyModalOpen(false)}
+        onSaved={() => setHasKey(!!getApiKey())}
+      />
     </div>
   );
 }

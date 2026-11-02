@@ -21,46 +21,59 @@ export function MessageBubble({
   }
 
   const turn = message.turn;
+  const hasAnswer = !!turn && turn.unified.trim().length > 0;
+
   return (
     <div className="flex items-start space-x-3 text-xs sm:text-sm">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-black">
+      <div
+        className={[
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-black",
+          streaming ? "pulse-mono" : "",
+        ].join(" ")}
+      >
         OM
       </div>
       <div className="min-w-0 flex-1 space-y-3">
-        {/* Participant badges */}
-        <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider">
-          {(turn?.participants ?? []).map((m) => (
-            <span
-              key={m}
-              className="rounded border border-[#444444] bg-[#161616] px-2 py-0.5 text-white"
-            >
-              [{MODELS[m].short}]
-            </span>
-          ))}
-          {streaming && (
-            <span className="pulse-mono rounded border border-[#444444] bg-[#161616] px-2 py-0.5 text-[#aaaaaa]">
-              orchestrating…
-            </span>
-          )}
-        </div>
-
-        {/* Content */}
-        {viewMode === "pipeline" || !turn ? (
-          <div className="space-y-3">
-            {(turn?.stages ?? []).map((s) => (
-              <StageCard key={s.model} stage={s} />
-            ))}
+        {/* Thinking indicator: just logo + "…thinking" until the answer arrives */}
+        {streaming && !hasAnswer && (
+          <div className="flex items-center gap-1 pt-1 font-mono text-[13px] text-[#888888]">
+            <span>thinking</span>
+            <span className="thinking-dots" />
           </div>
-        ) : (
+        )}
+
+        {/* Pipeline view (opt-in): show each model's stage */}
+        {hasAnswer && viewMode === "pipeline" && (
+          <>
+            <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider">
+              {turn!.participants.map((m) => (
+                <span
+                  key={m}
+                  className="rounded border border-[#444444] bg-[#161616] px-2 py-0.5 text-white"
+                >
+                  [{MODELS[m].short}]
+                </span>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {turn!.stages.map((s) => (
+                <StageCard key={s.model} stage={s} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Unified view (default): a clean conversational paragraph answer */}
+        {hasAnswer && viewMode === "unified" && (
           <div className="space-y-3">
             <div className="space-y-3 whitespace-pre-wrap text-[13px] leading-7 text-[#e3e3e3] sm:text-sm">
-              {turn.unified.split("\n\n").map((para, i) => (
+              {turn!.unified.split("\n\n").map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
             </div>
-            {turn.participants.length > 1 && (
+            {turn!.participants.length > 1 && (
               <div className="flex items-center gap-2 font-mono text-[10px] text-[#666666]">
-                <span>Synthesized across {turn.participants.length} models</span>
+                <span>Synthesized across {turn!.participants.length} models</span>
                 <span className="text-[#444444]">·</span>
                 <span className="text-[#888888]">
                   switch to Pipeline View to see each stage

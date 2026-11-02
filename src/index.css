@@ -68,3 +68,27 @@ body {
   background-color: #ffffff;
   color: #000000;
 }
+
+/* Animated "...thinking" dots */
+@keyframes thinkingDots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75%,
+  100% {
+    content: "...";
+  }
+}
+.thinking-dots::after {
+  content: "...";
+  animation: thinkingDots 1.2s infinite steps(1, end);
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+}
