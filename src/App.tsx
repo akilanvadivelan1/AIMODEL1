@@ -3,13 +3,12 @@ import type {
   AssistantTurn,
   ChatMessage,
   Conversation,
-  RouteMode,
   StageOutput,
   ViewMode,
 } from "./models/types";
 import { orchestrate } from "./models/orchestrator";
 import { Sidebar } from "./components/Sidebar";
-import { ModelSwitcher } from "./components/ModelSwitcher";
+import { ModelSwitcher, type Selection } from "./components/ModelSwitcher";
 import { ViewToggle } from "./components/ViewToggle";
 import { StrengthsModal } from "./components/StrengthsModal";
 import { MessageBubble } from "./components/MessageBubble";
@@ -36,7 +35,7 @@ function load(): Conversation[] {
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(load);
   const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
-  const [mode, setMode] = useState<RouteMode>("quad");
+  const [selection, setSelection] = useState<Selection>({ kind: "quad" });
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
@@ -128,7 +127,7 @@ export default function App() {
         }));
 
       const result: AssistantTurn = await orchestrate({
-        mode,
+        selection,
         prompt: text,
         history,
         signal: controller.signal,
@@ -217,7 +216,7 @@ export default function App() {
                 </svg>
               </button>
             )}
-            <ModelSwitcher value={mode} onChange={setMode} />
+            <ModelSwitcher value={selection} onChange={setSelection} />
           </div>
 
           <ViewToggle value={viewMode} onChange={setViewMode} />

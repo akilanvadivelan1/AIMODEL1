@@ -1,7 +1,7 @@
-import type { RouteMode } from "./types";
 import { getApiKey } from "./apiKey";
 
-const MODEL = "gemini-1.5-flash-latest";
+type Mode = "quad" | "single";
+
 const ENDPOINT = (model: string, key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
     key
@@ -13,7 +13,7 @@ const ENDPOINT = (model: string, key: string) =>
  * (spec clarity, grounded facts, careful reasoning, clean synthesis), and to
  * reply in natural paragraphs the way ChatGPT/Gemini do.
  */
-function systemInstruction(mode: RouteMode): string {
+function systemInstruction(mode: Mode): string {
   const base =
     "You are OmniMinds, a helpful assistant. Answer directly and conversationally in clear, well-structured paragraphs. Do not show your reasoning steps, labels, or stage headers. Just give the answer a person wants to read.";
   if (mode === "quad") {
@@ -22,13 +22,7 @@ function systemInstruction(mode: RouteMode): string {
       " Internally combine four strengths: precise framing of the question, grounded and up-to-date facts, careful reasoning about nuance, and a clean final synthesis. Blend them into one seamless answer."
     );
   }
-  const persona: Record<string, string> = {
-    kiro: " Emphasize precise, well-structured, specification-minded answers.",
-    gemini: " Emphasize grounded, factual, up-to-date answers.",
-    claude: " Emphasize careful reasoning, nuance, and readable prose.",
-    chatgpt: " Emphasize practical, direct, well-organized answers.",
-  };
-  return base + (persona[mode] ?? "");
+  return base;
 }
 
 /**
@@ -38,7 +32,8 @@ function systemInstruction(mode: RouteMode): string {
 export async function askGemini(
   prompt: string,
   history: { role: "user" | "assistant"; content: string }[],
-  mode: RouteMode,
+  apiModel: string,
+  mode: Mode,
   signal?: AbortSignal
 ): Promise<string> {
   const key = getApiKey();
@@ -60,7 +55,7 @@ export async function askGemini(
 
   let res: Response;
   try {
-    res = await fetch(ENDPOINT(MODEL, key), {
+    res = await fetch(ENDPOINT(apiModel, key), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
