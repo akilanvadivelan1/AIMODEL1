@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AssistantTurn,
+  Attachment,
   ChatMessage,
   Conversation,
   StageOutput,
@@ -58,7 +59,24 @@ export default function App() {
   );
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+    // Don't persist large base64 attachment blobs to localStorage (quota).
+    // Keep only lightweight metadata so the chip/label still shows on reload.
+    const slim = conversations.map((c) => ({
+      ...c,
+      messages: c.messages.map((m) =>
+        m.attachments
+          ? {
+              ...m,
+              attachments: m.attachments.map((a) => ({ ...a, data: "" })),
+            }
+          : m
+      ),
+    }));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+    } catch {
+      /* quota exceeded: skip persisting this cycle */
+    }
   }, [conversations]);
 
   useEffect(() => {
@@ -86,7 +104,7 @@ export default function App() {
     setActiveId((cur) => (cur === id ? null : cur));
   }
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, attachments: Attachment[] = []) {
     let convId = activeId;
     if (!convId || !conversations.some((c) => c.id === convId)) {
       convId = newConversation();
@@ -96,6 +114,7 @@ export default function App() {
       id: uid(),
       role: "user",
       content: text,
+      attachments: attachments.length ? attachments : undefined,
       createdAt: Date.now(),
     };
     const assistantMsg: ChatMessage = {
@@ -108,7 +127,7 @@ export default function App() {
 
     patch(convId, (c) => ({
       ...c,
-      title: c.messages.length === 0 ? titleFrom(text) : c.title,
+      title: c.messages.length === 0 ? titleFrom(text || "Attachment") : c.title,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
     setBusyMsgId(assistantMsg.id);
@@ -130,6 +149,7 @@ export default function App() {
         selection,
         prompt: text,
         history,
+        attachments,
         signal: controller.signal,
         onStage: (stage: StageOutput) => {
           patch(convId!, (c) => ({

@@ -1,0 +1,53 @@
+name: Build Mac App
+
+# Build the OmniDesk macOS app on a real macOS runner and attach the .dmg
+# as a downloadable artifact. Run it manually from the Actions tab, or it
+# runs automatically when you push a tag like v0.1.0.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web UI
+        run: npm run build
+
+      - name: Generate app icons from source PNG
+        run: npm run tauri -- icon desktop/src-tauri/icons/icon.png
+
+      - name: Build Tauri Mac app
+        run: npm run tauri:build
+
+      - name: Upload Mac app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnidesk-mac
+          path: |
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            desktop/src-tauri/target/release/bundle/macos/*.app
+          if-no-files-found: warn

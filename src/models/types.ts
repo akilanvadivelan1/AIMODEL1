@@ -42,10 +42,22 @@ export interface AssistantTurn {
   participants: ModelId[];
 }
 
+/** A file the user attached: image, screenshot, or document (base64 inline). */
+export interface Attachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  /** base64-encoded file contents (no data: prefix). */
+  data: string;
+  isImage: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  /** Files attached to a user message. */
+  attachments?: Attachment[];
   /** For assistant messages: the orchestrated multi-stage result. */
   turn?: AssistantTurn;
   createdAt: number;

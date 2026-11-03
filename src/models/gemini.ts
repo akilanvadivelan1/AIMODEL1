@@ -137,13 +137,19 @@ function systemInstruction(mode: Mode): string {
  * the key supports until one works. Throws AbortError if cancelled; returns a
  * friendly error string on failure.
  */
+export interface InlineFile {
+  mimeType: string;
+  data: string; // base64, no prefix
+}
+
 export async function askGemini(
   prompt: string,
   history: { role: "user" | "assistant"; content: string }[],
   apiModel: string,
   mode: Mode,
   signal?: AbortSignal,
-  extraSystem?: string
+  extraSystem?: string,
+  files?: InlineFile[]
 ): Promise<string> {
   const key = getApiKey();
   if (!key) return "No Gemini API key set.";
@@ -160,12 +166,22 @@ export async function askGemini(
     return "That key has no chat-capable Gemini models. Create a fresh key at aistudio.google.com and reconnect.";
   }
 
+  // The latest user turn can include attached files as inline data parts.
+  const userParts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  > = [];
+  if (prompt.trim()) userParts.push({ text: prompt });
+  for (const f of files ?? []) {
+    userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
+  }
+  if (userParts.length === 0) userParts.push({ text: "" });
+
   const contents = [
     ...history.map((h) => ({
       role: h.role === "assistant" ? "model" : "user",
       parts: [{ text: h.content }],
     })),
-    { role: "user", parts: [{ text: prompt }] },
+    { role: "user", parts: userParts },
   ];
 
   const body = {

@@ -13,8 +13,38 @@ export function MessageBubble({
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl border border-[#333333] bg-[#1a1a1a] px-4 py-3 font-mono text-xs leading-relaxed text-white shadow-lg sm:text-sm">
-          {message.content}
+        <div className="max-w-[85%] space-y-2">
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="flex flex-wrap justify-end gap-2">
+              {message.attachments.map((a) =>
+                a.isImage && a.data ? (
+                  <img
+                    key={a.id}
+                    src={`data:${a.mimeType};base64,${a.data}`}
+                    alt={a.name}
+                    className="h-24 w-24 rounded-lg border border-[#333333] object-cover"
+                  />
+                ) : (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-2 rounded-lg border border-[#333333] bg-[#1a1a1a] px-3 py-2"
+                  >
+                    <svg className="h-4 w-4 text-[#aaaaaa]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h10l6 6v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                    </svg>
+                    <span className="max-w-[160px] truncate font-mono text-[11px] text-[#cccccc]">
+                      {a.name}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+          {message.content && (
+            <div className="whitespace-pre-wrap rounded-2xl border border-[#333333] bg-[#1a1a1a] px-4 py-3 font-mono text-xs leading-relaxed text-white shadow-lg sm:text-sm">
+              {message.content}
+            </div>
+          )}
         </div>
       </div>
     );

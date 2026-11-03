@@ -1,7 +1,7 @@
-import type { AssistantTurn, ModelId, StageOutput } from "./types";
+import type { AssistantTurn, Attachment, ModelId, StageOutput } from "./types";
 import { PIPELINE_ORDER } from "./registry";
 import { getApiKey } from "./apiKey";
-import { askGemini } from "./gemini";
+import { askGemini, type InlineFile } from "./gemini";
 import { getVariant } from "./catalog";
 import { styleInstruction } from "./styleProfile";
 import type { Selection } from "../components/ModelSwitcher";
@@ -10,6 +10,7 @@ export interface OrchestrateOptions {
   selection: Selection;
   prompt: string;
   history?: { role: "user" | "assistant"; content: string }[];
+  attachments?: Attachment[];
   signal?: AbortSignal;
   onStage?: (stage: StageOutput) => void;
 }
@@ -29,7 +30,7 @@ export interface OrchestrateOptions {
 export async function orchestrate(
   opts: OrchestrateOptions
 ): Promise<AssistantTurn> {
-  const { selection, prompt, history, signal, onStage } = opts;
+  const { selection, prompt, history, attachments, signal, onStage } = opts;
 
   const participants: ModelId[] =
     selection.kind === "quad"
@@ -55,6 +56,11 @@ export async function orchestrate(
         ? selection.variantId
         : null;
 
+  const files: InlineFile[] = (attachments ?? []).map((a) => ({
+    mimeType: a.mimeType,
+    data: a.data,
+  }));
+
   let unified: string;
   if (hasKey && liveVariant) {
     const apiModel = getVariant(liveVariant).apiModel;
@@ -64,7 +70,8 @@ export async function orchestrate(
       apiModel,
       selection.kind,
       signal,
-      styleInstruction()
+      styleInstruction(),
+      files
     );
   } else if (!hasKey && liveVariant) {
     unified = mockNeedKey(prompt);
