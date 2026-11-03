@@ -20,8 +20,8 @@ fn toggle_window(window: &WebviewWindow) {
 }
 
 fn main() {
-    // Default summon shortcut: Cmd+Shift+Space on macOS.
-    let summon = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::Space);
+    // Default summon shortcut: Option + / on macOS (Option maps to ALT).
+    let summon = Shortcut::new(Some(Modifiers::ALT), Code::Slash);
 
     tauri::Builder::default()
         .plugin(

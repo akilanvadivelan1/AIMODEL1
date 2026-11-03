@@ -119,8 +119,8 @@ function Features() {
     },
     {
       title: "Summon from anywhere",
-      body: "A quick-search bar is one shortcut away. Hit the hotkey, type your question, and the answer appears without breaking your flow.",
-      badge: "HOTKEY",
+      body: "Press Option + / and a quick-search bar appears over any screen. Type your question, get the answer, and stay in your flow.",
+      badge: "OPTION + /",
     },
     {
       title: "Ask anything",
@@ -273,7 +273,7 @@ function HowItWorks() {
     {
       n: "01",
       title: "Summon it",
-      body: "Press the shortcut and a quick-search bar appears. No hunting for a tab, no switching apps. Just ask.",
+      body: "Press Option + / and a quick-search bar appears. No hunting for a tab, no switching apps. Just ask.",
     },
     {
       n: "02",

@@ -6,7 +6,7 @@ to summon the assistant over any screen.
 ## What this gives you
 
 - A real `.app` / `.dmg` for macOS (Apple Silicon and Intel).
-- A global shortcut (default **Cmd+Shift+Space**) that shows/hides the OmniDesk window from anywhere.
+- A global shortcut (default **Option + /**) that shows/hides the OmniDesk window from anywhere.
 - The same own-API-key model as the web app (your Gemini key stays on your machine).
 
 ## Why there is no prebuilt binary in this repo
