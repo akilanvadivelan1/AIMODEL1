@@ -98,7 +98,8 @@ export async function askGemini(
   history: { role: "user" | "assistant"; content: string }[],
   apiModel: string,
   mode: Mode,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  extraSystem?: string
 ): Promise<string> {
   const key = getApiKey();
   if (!key) return "No Gemini API key set.";
@@ -125,7 +126,9 @@ export async function askGemini(
   ];
 
   const body = {
-    systemInstruction: { parts: [{ text: systemInstruction(mode) }] },
+    systemInstruction: {
+      parts: [{ text: systemInstruction(mode) + (extraSystem ?? "") }],
+    },
     contents,
     generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
   };

@@ -3,6 +3,7 @@ import { PIPELINE_ORDER } from "./registry";
 import { getApiKey } from "./apiKey";
 import { askGemini } from "./gemini";
 import { getVariant } from "./catalog";
+import { styleInstruction } from "./styleProfile";
 import type { Selection } from "../components/ModelSwitcher";
 
 export interface OrchestrateOptions {
@@ -57,7 +58,14 @@ export async function orchestrate(
   let unified: string;
   if (hasKey && liveVariant) {
     const apiModel = getVariant(liveVariant).apiModel;
-    unified = await askGemini(prompt, history ?? [], apiModel, selection.kind, signal);
+    unified = await askGemini(
+      prompt,
+      history ?? [],
+      apiModel,
+      selection.kind,
+      signal,
+      styleInstruction()
+    );
   } else if (!hasKey && liveVariant) {
     unified = mockNeedKey(prompt);
   } else {
