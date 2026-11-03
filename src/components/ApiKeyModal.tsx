@@ -59,7 +59,7 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
             type="password"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="AIza..."
+            placeholder="Paste your Gemini key (starts with AQ. or AIza)"
             className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-white placeholder-[#555555] outline-none focus:border-white"
           />
 

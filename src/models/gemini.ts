@@ -2,18 +2,33 @@ import { getApiKey } from "./apiKey";
 
 type Mode = "quad" | "single";
 
-const BASE = "https://generativelanguage.googleapis.com/v1beta";
+const HOST = "https://generativelanguage.googleapis.com";
+// Newer AQ. keys and older AIza keys can differ in which version responds, so
+// we try v1beta first, then v1.
+const API_VERSIONS = ["v1beta", "v1"] as const;
 
-const ENDPOINT = (model: string, key: string) =>
-  `${BASE}/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+const listUrl = (version: string, key: string) =>
+  `${HOST}/${version}/models?key=${encodeURIComponent(key)}&pageSize=1000`;
 
-// Cache of models actually usable by the current key (per key).
+const genUrl = (version: string, model: string, key: string) =>
+  `${HOST}/${version}/models/${model}:generateContent?key=${encodeURIComponent(
+    key
+  )}`;
+
+// Send the key as a header too (preferred for the new AQ. key format).
+const keyHeaders = (key: string) => ({
+  "Content-Type": "application/json",
+  "x-goog-api-key": key,
+});
+
+// Cache of models usable by the current key, plus which API version worked.
 let cachedKey = "";
 let cachedModels: string[] | null = null;
+let cachedVersion: string = API_VERSIONS[0];
 
 /**
- * Asks Google which models THIS key can actually use for generateContent.
- * Returns bare model ids like "gemini-2.5-flash". Cached per key.
+ * Asks Google which models THIS key can use for generateContent, trying each
+ * API version. Records the version that responded. Cached per key.
  */
 async function listUsableModels(
   key: string,
@@ -21,27 +36,38 @@ async function listUsableModels(
 ): Promise<string[]> {
   if (cachedKey === key && cachedModels) return cachedModels;
 
-  const res = await fetch(
-    `${BASE}/models?key=${encodeURIComponent(key)}&pageSize=1000`,
-    { signal }
-  );
-  if (!res.ok) {
-    cachedKey = key;
-    cachedModels = [];
-    return [];
+  for (const version of API_VERSIONS) {
+    let res: Response;
+    try {
+      res = await fetch(listUrl(version, key), {
+        headers: keyHeaders(key),
+        signal,
+      });
+    } catch (err) {
+      if ((err as Error).name === "AbortError") throw err;
+      continue;
+    }
+    if (!res.ok) continue;
+
+    const data = await res.json();
+    const models: string[] = (data?.models ?? [])
+      .filter((m: { supportedGenerationMethods?: string[] }) =>
+        (m.supportedGenerationMethods ?? []).includes("generateContent")
+      )
+      .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
+      .filter(Boolean);
+
+    if (models.length > 0) {
+      cachedKey = key;
+      cachedModels = models;
+      cachedVersion = version;
+      return models;
+    }
   }
 
-  const data = await res.json();
-  const models: string[] = (data?.models ?? [])
-    .filter((m: { supportedGenerationMethods?: string[] }) =>
-      (m.supportedGenerationMethods ?? []).includes("generateContent")
-    )
-    .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
-    .filter(Boolean);
-
   cachedKey = key;
-  cachedModels = models;
-  return models;
+  cachedModels = [];
+  return [];
 }
 
 /** Ranks models so a sensible chat model comes first. */
@@ -153,49 +179,56 @@ export async function askGemini(
   const TRANSIENT = new Set([429, 500, 502, 503, 504]);
   let lastStatus = 0;
 
-  // Try each candidate model in order.
+  // Version order: the one that listed models first, then the rest.
+  const versions = [
+    cachedVersion,
+    ...API_VERSIONS.filter((v) => v !== cachedVersion),
+  ];
+
+  // Try each candidate model against each API version.
   for (const model of candidates) {
-    // Per-model: a few attempts for transient errors.
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      let res: Response;
-      try {
-        res = await fetch(ENDPOINT(model, key), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          signal,
-        });
-      } catch (err) {
-        if ((err as Error).name === "AbortError") throw err;
-        if (attempt < 3) {
+    for (const version of versions) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        let res: Response;
+        try {
+          res = await fetch(genUrl(version, model, key), {
+            method: "POST",
+            headers: keyHeaders(key),
+            body: JSON.stringify(body),
+            signal,
+          });
+        } catch (err) {
+          if ((err as Error).name === "AbortError") throw err;
+          if (attempt < 2) {
+            await backoff(attempt, signal);
+            continue;
+          }
+          return "Could not reach Gemini. Check your network connection and try again.";
+        }
+
+        if (res.ok) {
+          cachedVersion = version; // remember what worked
+          return extractText(await res.json());
+        }
+
+        lastStatus = res.status;
+
+        // Bad key: stop entirely.
+        if (res.status === 400 || res.status === 403) {
+          return 'That Gemini API key was rejected. Click "Connect" and paste a valid key (it may start with "AQ." or "AIza").';
+        }
+
+        // Model/version not found: try the next version, then next model.
+        if (res.status === 404) break;
+
+        // Transient: back off and retry the same model+version.
+        if (TRANSIENT.has(res.status) && attempt < 2) {
           await backoff(attempt, signal);
           continue;
         }
-        return "Could not reach Gemini. Check your network connection and try again.";
+
+        break;
       }
-
-      if (res.ok) {
-        return extractText(await res.json());
-      }
-
-      lastStatus = res.status;
-
-      // Bad key: no point trying other models.
-      if (res.status === 400 || res.status === 403) {
-        return 'That Gemini API key was rejected. Click "Connect" in the header and paste a valid key.';
-      }
-
-      // This model doesn't exist for the key: try the NEXT candidate.
-      if (res.status === 404) break;
-
-      // Transient: back off and retry the same model.
-      if (TRANSIENT.has(res.status) && attempt < 3) {
-        await backoff(attempt, signal);
-        continue;
-      }
-
-      // Other errors: move on to the next candidate.
-      break;
     }
   }
 
@@ -209,9 +242,8 @@ export async function askGemini(
   if (lastStatus === 404) {
     const n = cachedModels?.length ?? 0;
     return (
-      `Your key could list ${n} model(s), but none accepted a request (404). ` +
-      "This usually means the key's Google Cloud project does not have the Gemini API fully enabled. " +
-      "Fix: go to aistudio.google.com/app/apikey, click \"Create API key in a NEW project\", and paste that fresh key into Connect."
+      `Reached Google and found ${n} model(s), but the request returned 404. ` +
+      "Try again in a moment. If it keeps failing, the key's project may not have the Gemini API enabled, so create a new key at aistudio.google.com and reconnect."
     );
   }
   return `Could not get a response from Gemini (last error ${lastStatus || "network"}). Try again, or reconnect your key.`;
