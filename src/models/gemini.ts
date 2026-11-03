@@ -2,10 +2,74 @@ import { getApiKey } from "./apiKey";
 
 type Mode = "quad" | "single";
 
+const BASE = "https://generativelanguage.googleapis.com/v1beta";
+
 const ENDPOINT = (model: string, key: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
-    key
-  )}`;
+  `${BASE}/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+
+// Cache of models actually usable by the current key (per key).
+let cachedKey = "";
+let cachedModels: string[] | null = null;
+
+/**
+ * Asks Google which models THIS key can actually use for generateContent.
+ * Returns bare model ids like "gemini-2.5-flash". Cached per key.
+ */
+async function listUsableModels(
+  key: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  if (cachedKey === key && cachedModels) return cachedModels;
+
+  const res = await fetch(
+    `${BASE}/models?key=${encodeURIComponent(key)}&pageSize=200`,
+    { signal }
+  );
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const models: string[] = (data?.models ?? [])
+    .filter((m: { supportedGenerationMethods?: string[] }) =>
+      (m.supportedGenerationMethods ?? []).includes("generateContent")
+    )
+    .map((m: { name?: string }) => (m.name ?? "").replace(/^models\//, ""))
+    .filter(Boolean);
+
+  cachedKey = key;
+  cachedModels = models;
+  return models;
+}
+
+/**
+ * Picks the best real model name for the key: the requested one if the key
+ * supports it, otherwise the closest available (prefer a 2.5 flash, then any
+ * flash, then any gemini model). Returns null if the key has none.
+ */
+async function resolveModel(
+  preferred: string,
+  key: string,
+  signal?: AbortSignal
+): Promise<string | null> {
+  const usable = await listUsableModels(key, signal);
+  if (usable.length === 0) return preferred; // couldn't list; try as-is
+
+  if (usable.includes(preferred)) return preferred;
+
+  const prefersFlash = preferred.includes("flash");
+  const rank = (m: string): number => {
+    let score = 0;
+    if (m.includes("2.5")) score += 4;
+    else if (m.includes("2.0")) score += 2;
+    if (m.includes("flash") === prefersFlash) score += 2;
+    if (m.includes("flash")) score += 1;
+    if (m.includes("latest")) score += 1;
+    // Avoid preview/experimental/vision-only when possible.
+    if (/preview|exp|vision|embedding|aqa/.test(m)) score -= 3;
+    return score;
+  };
+  const best = [...usable].sort((a, b) => rank(b) - rank(a))[0];
+  return best ?? null;
+}
 
 /**
  * System instruction shaping the OmniMinds persona. In "quad" mode we ask the
@@ -39,6 +103,19 @@ export async function askGemini(
   const key = getApiKey();
   if (!key) return "No Gemini API key set.";
 
+  // Resolve to a model this key can actually use (auto-fallback).
+  let model: string;
+  try {
+    const resolved = await resolveModel(apiModel, key, signal);
+    if (!resolved) {
+      return "Your key has no usable chat models. Create a fresh key at aistudio.google.com and reconnect.";
+    }
+    model = resolved;
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    model = apiModel; // listing failed; try the requested name directly
+  }
+
   const contents = [
     ...history.map((h) => ({
       role: h.role === "assistant" ? "model" : "user",
@@ -61,7 +138,7 @@ export async function askGemini(
   let res: Response | null = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      res = await fetch(ENDPOINT(apiModel, key), {
+      res = await fetch(ENDPOINT(model, key), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -84,7 +161,22 @@ export async function askGemini(
       return "That Gemini API key was rejected. Click \"Connect\" in the header and check the key.";
     }
     if (res.status === 404) {
-      return "That model isn't available for your key. Pick a different Gemini model from the dropdown.";
+      // The model name was wrong. Invalidate cache, re-resolve, retry once.
+      cachedModels = null;
+      cachedKey = "";
+      if (attempt < MAX_ATTEMPTS) {
+        try {
+          const reResolved = await resolveModel("gemini-flash", key, signal);
+          if (reResolved && reResolved !== model) {
+            model = reResolved;
+            await backoff(attempt, signal);
+            continue;
+          }
+        } catch {
+          /* fall through */
+        }
+      }
+      return "No matching Gemini model is available for your key. Create a fresh key at aistudio.google.com and reconnect.";
     }
 
     // Transient: back off and retry.
