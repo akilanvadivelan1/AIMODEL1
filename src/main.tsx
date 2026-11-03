@@ -19,6 +19,13 @@ function Root() {
   }, []);
 
   const isApp = route.startsWith("#/app");
+
+  // Lock page scroll only for the fixed-layout chat app; let the landing scroll.
+  useEffect(() => {
+    document.documentElement.classList.toggle("app-view", isApp);
+    if (!isApp) window.scrollTo(0, 0);
+  }, [isApp]);
+
   return isApp ? <App /> : <Landing />;
 }
 

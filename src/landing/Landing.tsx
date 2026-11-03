@@ -6,8 +6,13 @@ export function Landing() {
       <Nav />
       <Hero />
       <Features />
+      <HowItWorks />
+      <Connectors />
+      <UseCases />
+      <Privacy />
       <Download />
       <Pricing />
+      <Faq />
       <Footer />
     </div>
   );
@@ -257,6 +262,206 @@ function Pricing() {
           >
             Try it free ➔
           </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    {
+      n: "01",
+      title: "Summon it",
+      body: "Press the shortcut and a quick-search bar appears. No hunting for a tab, no switching apps. Just ask.",
+    },
+    {
+      n: "02",
+      title: "Ask in plain words",
+      body: "Type a question or a task. Draft a reply, explain something, crunch some math, or research a topic. OmniDesk figures out the rest.",
+    },
+    {
+      n: "03",
+      title: "Get an answer in your voice",
+      body: "Responses come back clear and natural. When it writes for you, it matches the style you taught it, so it sounds like you.",
+    },
+  ];
+  return (
+    <section className="border-t border-[#1c1c1c] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#888888]">
+            How it works
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Three steps, no friction.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {steps.map((s) => (
+            <div key={s.n} className="rounded-2xl border border-[#242424] bg-[#111111] p-6">
+              <div className="mb-4 font-mono text-3xl font-bold text-[#333333]">{s.n}</div>
+              <h3 className="text-lg font-bold">{s.title}</h3>
+              <p className="mt-2 font-mono text-sm leading-relaxed text-[#999999]">{s.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Connectors() {
+  const apps = [
+    "Gmail", "Google Calendar", "Google Drive", "Google Docs",
+    "Microsoft 365", "Outlook", "Slack", "Notion",
+    "GitHub", "Linear", "Trello", "Todoist",
+  ];
+  return (
+    <section className="border-t border-[#1c1c1c] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#888888]">
+            Connectors
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Plugs into your tools.
+          </h2>
+          <p className="mx-auto mt-4 max-w-md font-mono text-sm leading-relaxed text-[#999999]">
+            Connect the apps you already use so OmniDesk can work right alongside
+            your mail, calendar, and docs. Rolling out soon.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {apps.map((a) => (
+            <div
+              key={a}
+              className="flex items-center justify-between rounded-xl border border-[#242424] bg-[#111111] px-4 py-3 font-mono text-sm text-[#cccccc]"
+            >
+              <span>{a}</span>
+              <span className="rounded border border-[#3a3a3a] px-1 py-0.5 text-[8px] uppercase tracking-wider text-[#777777]">
+                soon
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UseCases() {
+  const cases = [
+    "Summarize this email thread and draft a reply in my tone.",
+    "What does my day look like, and when am I free for an hour?",
+    "Explain this error message and how to fix it.",
+    "Turn these rough notes into a clean, polished memo.",
+    "Research the top options for X and give me a short comparison.",
+    "Check this math and show the steps.",
+  ];
+  return (
+    <section className="border-t border-[#1c1c1c] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#888888]">
+            Use cases
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            What people ask it.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {cases.map((c) => (
+            <div
+              key={c}
+              className="flex items-start gap-3 rounded-xl border border-[#242424] bg-[#111111] px-5 py-4"
+            >
+              <span className="mt-0.5 font-mono text-sm text-[#555555]">&gt;</span>
+              <p className="font-mono text-sm leading-relaxed text-[#cccccc]">{c}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Privacy() {
+  const points = [
+    {
+      title: "Your data stays yours",
+      body: "Your writing style and chats live in your own browser. Nothing is sold, and nothing is used to train models.",
+    },
+    {
+      title: "You hold the keys",
+      body: "The web version runs on your own Gemini key. Requests go straight from your browser to the model provider.",
+    },
+    {
+      title: "Permission first",
+      body: "When connectors arrive, they use secure sign-in with explicit permissions. Actions like sending wait for your approval.",
+    },
+  ];
+  return (
+    <section className="border-t border-[#1c1c1c] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#888888]">
+            Privacy by design
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Built to be trusted.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {points.map((p) => (
+            <div key={p.title} className="rounded-2xl border border-[#242424] bg-[#111111] p-6">
+              <h3 className="text-lg font-bold">{p.title}</h3>
+              <p className="mt-2 font-mono text-sm leading-relaxed text-[#999999]">{p.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Faq() {
+  const faqs = [
+    {
+      q: "Do I need to pay?",
+      a: "No. The web version is free to use with your own free Gemini key. Paid plans are coming later.",
+    },
+    {
+      q: "Do I need an account?",
+      a: "No account is needed for the web version. Add a Gemini key and start right away.",
+    },
+    {
+      q: "How does the writing-style feature work?",
+      a: "Paste one sample of your writing. OmniDesk learns your tone and quirks, then drafts in your voice.",
+    },
+    {
+      q: "When is the Mac app coming?",
+      a: "It is in development. The Mac app adds a global hotkey so you can summon OmniDesk over any screen.",
+    },
+  ];
+  return (
+    <section className="border-t border-[#1c1c1c] py-24">
+      <div className="mx-auto max-w-3xl px-6">
+        <div className="mb-14 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-[#888888]">
+            FAQ
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Good to know.
+          </h2>
+        </div>
+        <div className="space-y-3">
+          {faqs.map((f) => (
+            <div key={f.q} className="rounded-2xl border border-[#242424] bg-[#111111] p-6">
+              <h3 className="text-base font-bold">{f.q}</h3>
+              <p className="mt-2 font-mono text-sm leading-relaxed text-[#999999]">{f.a}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>

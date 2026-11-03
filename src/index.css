@@ -7,7 +7,7 @@
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -15,6 +15,14 @@ body {
   background-color: #121212;
   color: #ffffff;
   font-family: "Space Grotesk", "Space Mono", monospace, sans-serif;
+}
+
+/* The chat app is a fixed, full-screen layout and must NOT scroll the page.
+   This class is applied to <html> only while the app view is mounted. */
+html.app-view,
+html.app-view body,
+html.app-view #root {
+  height: 100%;
   overflow: hidden;
 }
 
