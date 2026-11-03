@@ -53,27 +53,58 @@ export async function askGemini(
     generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
   };
 
-  let res: Response;
-  try {
-    res = await fetch(ENDPOINT(apiModel, key), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal,
-    });
-  } catch (err) {
-    if ((err as Error).name === "AbortError") throw err;
-    return "Could not reach the Gemini API. Check your network connection.";
+  // Transient errors (model overloaded / rate limited) are retried
+  // automatically with exponential backoff before giving up.
+  const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+  const MAX_ATTEMPTS = 4;
+
+  let res: Response | null = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      res = await fetch(ENDPOINT(apiModel, key), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal,
+      });
+    } catch (err) {
+      if ((err as Error).name === "AbortError") throw err;
+      // Network blip: retry unless it was the last attempt.
+      if (attempt < MAX_ATTEMPTS) {
+        await backoff(attempt, signal);
+        continue;
+      }
+      return "Could not reach the Gemini API. Check your network connection and try again.";
+    }
+
+    if (res.ok) break;
+
+    // Non-retryable errors: fail fast with a clear message.
+    if (res.status === 400 || res.status === 403) {
+      return "That Gemini API key was rejected. Click \"Connect\" in the header and check the key.";
+    }
+    if (res.status === 404) {
+      return "That model isn't available for your key. Pick a different Gemini model from the dropdown.";
+    }
+
+    // Transient: back off and retry.
+    if (TRANSIENT.has(res.status) && attempt < MAX_ATTEMPTS) {
+      await backoff(attempt, signal);
+      continue;
+    }
+
+    // Out of retries.
+    if (res.status === 429) {
+      return "Gemini is rate-limiting your key right now. Wait a minute and try again.";
+    }
+    if (res.status === 503) {
+      return "Gemini's servers are busy right now (we retried a few times). Please try again in a moment.";
+    }
+    return `Gemini API error (${res.status}). Please try again.`;
   }
 
-  if (!res.ok) {
-    if (res.status === 400 || res.status === 403) {
-      return "That Gemini API key was rejected. Open the key icon in the header and check it.";
-    }
-    if (res.status === 429) {
-      return "Gemini rate limit hit. Wait a moment and try again.";
-    }
-    return `Gemini API error (${res.status}). Try again.`;
+  if (!res) {
+    return "Gemini's servers are busy right now. Please try again in a moment.";
   }
 
   const data = await res.json();
@@ -89,4 +120,21 @@ export async function askGemini(
     return "Gemini returned an empty response. Try rephrasing.";
   }
   return text;
+}
+
+/** Exponential backoff with jitter, abortable. Waits ~0.6s, 1.2s, 2.4s... */
+function backoff(attempt: number, signal?: AbortSignal): Promise<void> {
+  const ms = 600 * Math.pow(2, attempt - 1) + Math.random() * 300;
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException("Aborted", "AbortError"));
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(t);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true }
+    );
+  });
 }
