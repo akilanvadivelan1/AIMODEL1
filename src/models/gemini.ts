@@ -22,10 +22,14 @@ async function listUsableModels(
   if (cachedKey === key && cachedModels) return cachedModels;
 
   const res = await fetch(
-    `${BASE}/models?key=${encodeURIComponent(key)}&pageSize=200`,
+    `${BASE}/models?key=${encodeURIComponent(key)}&pageSize=1000`,
     { signal }
   );
-  if (!res.ok) return [];
+  if (!res.ok) {
+    cachedKey = key;
+    cachedModels = [];
+    return [];
+  }
 
   const data = await res.json();
   const models: string[] = (data?.models ?? [])
@@ -40,46 +44,59 @@ async function listUsableModels(
   return models;
 }
 
-/**
- * Picks the best real model name for the key: the requested one if the key
- * supports it, otherwise the closest available (prefer a 2.5 flash, then any
- * flash, then any gemini model). Returns null if the key has none.
- */
-async function resolveModel(
-  preferred: string,
-  key: string,
-  signal?: AbortSignal
-): Promise<string | null> {
-  const usable = await listUsableModels(key, signal);
-  if (usable.length === 0) return preferred; // couldn't list; try as-is
-
-  if (usable.includes(preferred)) return preferred;
-
-  const prefersFlash = preferred.includes("flash");
-  const rank = (m: string): number => {
-    let score = 0;
-    if (m.includes("2.5")) score += 4;
-    else if (m.includes("2.0")) score += 2;
-    if (m.includes("flash") === prefersFlash) score += 2;
-    if (m.includes("flash")) score += 1;
-    if (m.includes("latest")) score += 1;
-    // Avoid preview/experimental/vision-only when possible.
-    if (/preview|exp|vision|embedding|aqa/.test(m)) score -= 3;
-    return score;
-  };
-  const best = [...usable].sort((a, b) => rank(b) - rank(a))[0];
-  return best ?? null;
+/** Ranks models so a sensible chat model comes first. */
+function rank(m: string, prefersFlash: boolean): number {
+  let score = 0;
+  if (m.includes("2.5")) score += 5;
+  else if (m.includes("2.0")) score += 3;
+  else if (m.includes("1.5")) score += 2;
+  if (m.includes("flash") === prefersFlash) score += 2;
+  if (m.includes("flash")) score += 1;
+  if (m.includes("lite")) score += 1;
+  if (m.endsWith("-latest")) score += 1;
+  // Steer away from non-chat / special models.
+  if (/embedding|aqa|vision|image|tts|audio|learnlm/.test(m)) score -= 8;
+  if (/preview|exp|thinking/.test(m)) score -= 1;
+  return score;
 }
 
 /**
- * System instruction shaping the OmniMinds persona. In "quad" mode we ask the
- * single underlying model to answer as if it fused the four strengths
- * (spec clarity, grounded facts, careful reasoning, clean synthesis), and to
- * reply in natural paragraphs the way ChatGPT/Gemini do.
+ * Builds an ordered list of model names to try: the preferred one first (if the
+ * key supports it, or always if we couldn't list), then every other usable
+ * model ranked best-first. Guarantees we try everything the key can run.
  */
+async function candidateModels(
+  preferred: string,
+  key: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  const usable = await listUsableModels(key, signal);
+  const prefersFlash = preferred.includes("flash");
+
+  if (usable.length === 0) {
+    // Couldn't list (older key/endpoint). Try a spread of common names.
+    return [
+      preferred,
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-flash-latest",
+      "gemini-2.5-flash-lite",
+      "gemini-1.5-flash",
+      "gemini-pro-latest",
+    ].filter((v, i, a) => a.indexOf(v) === i);
+  }
+
+  const ranked = [...usable].sort((a, b) => rank(b, prefersFlash) - rank(a, prefersFlash));
+  // Put the preferred model first if the key supports it.
+  const ordered = usable.includes(preferred)
+    ? [preferred, ...ranked.filter((m) => m !== preferred)]
+    : ranked;
+  return ordered;
+}
+
 function systemInstruction(mode: Mode): string {
   const base =
-    "You are OmniMinds, a helpful assistant. Answer directly and conversationally in clear, well-structured paragraphs. Do not show your reasoning steps, labels, or stage headers. Just give the answer a person wants to read.";
+    "You are OmniDesk, a helpful personal AI assistant. Answer directly and conversationally in clear, well-structured paragraphs. Do not show your reasoning steps, labels, or stage headers. Just give the answer a person wants to read.";
   if (mode === "quad") {
     return (
       base +
@@ -90,8 +107,9 @@ function systemInstruction(mode: Mode): string {
 }
 
 /**
- * Calls the real Gemini API and returns a paragraph answer.
- * Throws AbortError if cancelled; returns a friendly error string on failure.
+ * Calls the real Gemini API and returns a paragraph answer. Tries each model
+ * the key supports until one works. Throws AbortError if cancelled; returns a
+ * friendly error string on failure.
  */
 export async function askGemini(
   prompt: string,
@@ -104,17 +122,16 @@ export async function askGemini(
   const key = getApiKey();
   if (!key) return "No Gemini API key set.";
 
-  // Resolve to a model this key can actually use (auto-fallback).
-  let model: string;
+  // Figure out which models to try, best-first.
+  let candidates: string[];
   try {
-    const resolved = await resolveModel(apiModel, key, signal);
-    if (!resolved) {
-      return "Your key has no usable chat models. Create a fresh key at aistudio.google.com and reconnect.";
-    }
-    model = resolved;
+    candidates = await candidateModels(apiModel, key, signal);
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
-    model = apiModel; // listing failed; try the requested name directly
+    candidates = [apiModel];
+  }
+  if (candidates.length === 0) {
+    return "That key has no chat-capable Gemini models. Create a fresh key at aistudio.google.com and reconnect.";
   }
 
   const contents = [
@@ -133,91 +150,89 @@ export async function askGemini(
     generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
   };
 
-  // Transient errors (model overloaded / rate limited) are retried
-  // automatically with exponential backoff before giving up.
   const TRANSIENT = new Set([429, 500, 502, 503, 504]);
-  const MAX_ATTEMPTS = 4;
+  let lastStatus = 0;
 
-  let res: Response | null = null;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      res = await fetch(ENDPOINT(model, key), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal,
-      });
-    } catch (err) {
-      if ((err as Error).name === "AbortError") throw err;
-      // Network blip: retry unless it was the last attempt.
-      if (attempt < MAX_ATTEMPTS) {
+  // Try each candidate model in order.
+  for (const model of candidates) {
+    // Per-model: a few attempts for transient errors.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      let res: Response;
+      try {
+        res = await fetch(ENDPOINT(model, key), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal,
+        });
+      } catch (err) {
+        if ((err as Error).name === "AbortError") throw err;
+        if (attempt < 3) {
+          await backoff(attempt, signal);
+          continue;
+        }
+        return "Could not reach Gemini. Check your network connection and try again.";
+      }
+
+      if (res.ok) {
+        return extractText(await res.json());
+      }
+
+      lastStatus = res.status;
+
+      // Bad key: no point trying other models.
+      if (res.status === 400 || res.status === 403) {
+        return 'That Gemini API key was rejected. Click "Connect" in the header and paste a valid key.';
+      }
+
+      // This model doesn't exist for the key: try the NEXT candidate.
+      if (res.status === 404) break;
+
+      // Transient: back off and retry the same model.
+      if (TRANSIENT.has(res.status) && attempt < 3) {
         await backoff(attempt, signal);
         continue;
       }
-      return "Could not reach the Gemini API. Check your network connection and try again.";
-    }
 
-    if (res.ok) break;
-
-    // Non-retryable errors: fail fast with a clear message.
-    if (res.status === 400 || res.status === 403) {
-      return "That Gemini API key was rejected. Click \"Connect\" in the header and check the key.";
+      // Other errors: move on to the next candidate.
+      break;
     }
-    if (res.status === 404) {
-      // The model name was wrong. Invalidate cache, re-resolve, retry once.
-      cachedModels = null;
-      cachedKey = "";
-      if (attempt < MAX_ATTEMPTS) {
-        try {
-          const reResolved = await resolveModel("gemini-flash", key, signal);
-          if (reResolved && reResolved !== model) {
-            model = reResolved;
-            await backoff(attempt, signal);
-            continue;
-          }
-        } catch {
-          /* fall through */
-        }
-      }
-      return "No matching Gemini model is available for your key. Create a fresh key at aistudio.google.com and reconnect.";
-    }
-
-    // Transient: back off and retry.
-    if (TRANSIENT.has(res.status) && attempt < MAX_ATTEMPTS) {
-      await backoff(attempt, signal);
-      continue;
-    }
-
-    // Out of retries.
-    if (res.status === 429) {
-      return "Gemini is rate-limiting your key right now. Wait a minute and try again.";
-    }
-    if (res.status === 503) {
-      return "Gemini's servers are busy right now (we retried a few times). Please try again in a moment.";
-    }
-    return `Gemini API error (${res.status}). Please try again.`;
   }
 
-  if (!res) {
+  // Nothing worked.
+  if (lastStatus === 429) {
+    return "Gemini is rate-limiting your key right now. Wait a minute and try again.";
+  }
+  if (lastStatus === 503 || lastStatus === 500) {
     return "Gemini's servers are busy right now. Please try again in a moment.";
   }
-
-  const data = await res.json();
-  const text: string | undefined =
-    data?.candidates?.[0]?.content?.parts
-      ?.map((p: { text?: string }) => p.text ?? "")
-      .join("")
-      .trim();
-
-  if (!text) {
-    const blocked = data?.promptFeedback?.blockReason;
-    if (blocked) return `The response was blocked (${blocked}). Try rephrasing.`;
-    return "Gemini returned an empty response. Try rephrasing.";
+  if (lastStatus === 404) {
+    const n = cachedModels?.length ?? 0;
+    return (
+      `Your key could list ${n} model(s), but none accepted a request (404). ` +
+      "This usually means the key's Google Cloud project does not have the Gemini API fully enabled. " +
+      "Fix: go to aistudio.google.com/app/apikey, click \"Create API key in a NEW project\", and paste that fresh key into Connect."
+    );
   }
-  return text;
+  return `Could not get a response from Gemini (last error ${lastStatus || "network"}). Try again, or reconnect your key.`;
 }
 
-/** Exponential backoff with jitter, abortable. Waits ~0.6s, 1.2s, 2.4s... */
+function extractText(data: unknown): string {
+  const d = data as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    promptFeedback?: { blockReason?: string };
+  };
+  const text = d?.candidates?.[0]?.content?.parts
+    ?.map((p) => p.text ?? "")
+    .join("")
+    .trim();
+  if (text) return text;
+  const blocked = d?.promptFeedback?.blockReason;
+  if (blocked) return `The response was blocked (${blocked}). Try rephrasing.`;
+  return "Gemini returned an empty response. Try rephrasing.";
+}
+
+/** Exponential backoff with jitter, abortable. Waits ~0.6s, 1.2s... */
 function backoff(attempt: number, signal?: AbortSignal): Promise<void> {
   const ms = 600 * Math.pow(2, attempt - 1) + Math.random() * 300;
   return new Promise((resolve, reject) => {
