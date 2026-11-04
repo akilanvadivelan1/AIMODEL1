@@ -1,6 +1,0 @@
-- generic [ref=f1e10]:
-  - textbox "Ask OmniDesk anything" [active] [ref=f1e12]
-  - generic [ref=f1e18]:
-    - paragraph [ref=f1e19]: who is bonnie blue
-    - paragraph [ref=f1e20]: Add your Gemini key first. Open OmniDesk, click Connect, and paste your key.
-    - button "Open OmniDesk" [ref=f1e22] [cursor=pointer]

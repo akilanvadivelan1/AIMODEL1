@@ -19,3 +19,6 @@ tsconfig.tsbuildinfo
 
 backend/*.tmp.mts
 backend/data-live.log
+
+# Local tool output
+.kiro/artifacts/
