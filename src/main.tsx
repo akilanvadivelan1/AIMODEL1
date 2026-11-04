@@ -9,6 +9,9 @@ import "./index.css";
  *   #/app  → the OmniDesk chatbot
  *   (else) → the marketing landing page
  */
+// In the desktop (Tauri) build, skip the marketing site and open the app.
+const IS_DESKTOP = import.meta.env.VITE_OMNIDESK_DESKTOP === "1";
+
 function Root() {
   const [route, setRoute] = useState(window.location.hash);
 
@@ -18,7 +21,7 @@ function Root() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  const isApp = route.startsWith("#/app");
+  const isApp = IS_DESKTOP || route.startsWith("#/app");
 
   // Lock page scroll only for the fixed-layout chat app; let the landing scroll.
   useEffect(() => {

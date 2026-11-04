@@ -8,6 +8,8 @@ import react from "@vitejs/plugin-react";
 const isDesktop = process.env.OMNIDESK_TARGET === "desktop";
 
 export default defineConfig({
-  base: isDesktop ? "/" : "/AIMODEL1/",
+  // Relative base ("./") is the most robust for the Tauri webview, since it
+  // resolves assets regardless of the internal URL scheme.
+  base: isDesktop ? "./" : "/AIMODEL1/",
   plugins: [react()],
 });

@@ -5,8 +5,8 @@
   "identifier": "com.omnidesk.app",
   "build": {
     "frontendDist": "../../dist",
-    "beforeBuildCommand": "OMNIDESK_TARGET=desktop npm run build",
-    "beforeDevCommand": "OMNIDESK_TARGET=desktop npm run dev"
+    "beforeBuildCommand": "OMNIDESK_TARGET=desktop VITE_OMNIDESK_DESKTOP=1 npm run build",
+    "beforeDevCommand": "OMNIDESK_TARGET=desktop VITE_OMNIDESK_DESKTOP=1 npm run dev"
   },
   "app": {
     "windows": [
