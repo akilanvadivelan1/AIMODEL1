@@ -1,4 +1,5 @@
-import type { Config } from "./config.js";
+import type { Env } from "./env";
+import type { Config } from "./config";
 
 export type SendEmail = (to: string, code: string) => Promise<void>;
 
@@ -16,12 +17,13 @@ function bodies(code: string) {
 }
 
 /**
- * Production: sends through Resend (https://resend.com).
- * Development without a key: prints the code to the server console instead.
+ * Returns the function that delivers a sign-in code, or null if email is not set up.
+ * With a Resend key it sends real email. With DEV_LOG_CODES=1 it prints the code
+ * in the log instead, which is for local testing only.
  */
-export function createMailer(config: Config): SendEmail {
-  if (config.resendApiKey) {
-    const apiKey = config.resendApiKey;
+export function mailerFor(env: Env, config: Config): SendEmail | null {
+  const apiKey = env.RESEND_API_KEY?.trim();
+  if (apiKey) {
     return async (to, code) => {
       const { text, html } = bodies(code);
       const res = await fetch("https://api.resend.com/emails", {
@@ -42,7 +44,11 @@ export function createMailer(config: Config): SendEmail {
     };
   }
 
-  return async (to, code) => {
-    console.log(`[dev mail] To: ${to}  Code: ${code}`);
-  };
+  if (env.DEV_LOG_CODES === "1") {
+    return async (to, code) => {
+      console.log(`[dev mail] To: ${to}  Code: ${code}`);
+    };
+  }
+
+  return null;
 }

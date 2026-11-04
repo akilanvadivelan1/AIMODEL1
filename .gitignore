@@ -16,3 +16,6 @@ backend/dist
 *.db-wal
 *.db-shm
 tsconfig.tsbuildinfo
+
+backend/*.tmp.mts
+backend/data-live.log

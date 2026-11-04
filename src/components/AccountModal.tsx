@@ -58,6 +58,22 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // What the server can actually do: emailed codes, Google, or both.
+  const [options, setOptions] = useState<
+    { email: boolean; google: boolean } | "loading" | "error"
+  >("loading");
+  const canEmail = typeof options === "object" && options.email;
+  const canGoogle =
+    typeof options === "object" && options.google && !!googleClientId && !isTauri;
+
+  function loadOptions() {
+    setOptions("loading");
+    api
+      .config()
+      .then(setOptions)
+      .catch(() => setOptions("error"));
+  }
+
   const googleRef = useRef<HTMLDivElement>(null);
   const onSignedInRef = useRef(onSignedIn);
   onSignedInRef.current = onSignedIn;
@@ -68,12 +84,13 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
       setCode("");
       setError("");
       setConfirmDelete(false);
+      if (backendEnabled && !user) loadOptions();
     }
   }, [open]);
 
   // Draw the Google button on the web version.
   useEffect(() => {
-    if (!open || user || step !== "email" || !googleClientId || isTauri) return;
+    if (!open || user || step !== "email" || !canGoogle) return;
     let cancelled = false;
     loadGoogleScript()
       .then(() => {
@@ -109,7 +126,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
     return () => {
       cancelled = true;
     };
-  }, [open, user, step, onClose]);
+  }, [open, user, step, canGoogle, onClose]);
 
   if (!open) return null;
 
@@ -284,45 +301,71 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
             </>
           ) : step === "email" ? (
             <>
-              <p className="leading-relaxed text-[#b3b3b3]">
-                Sign in to keep your Gemini key, chosen AI, and writing style on every
-                device. We will email you a 6 digit code. No password needed.
-              </p>
+              {options === "loading" && (
+                <p className="text-[#777777]">Checking sign-in options...</p>
+              )}
 
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && email.trim() && !busy && sendCode()}
-                placeholder="you@example.com"
-                autoComplete="email"
-                className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-white placeholder-[#555555] outline-none focus:border-white"
-              />
+              {options === "error" && (
+                <>
+                  <ErrorBox text="Could not reach the OmniDesk server. Check your connection and try again." />
+                  <button
+                    onClick={loadOptions}
+                    className="w-full rounded-lg border border-[#333333] px-4 py-2 text-[#cccccc] hover:bg-[#1a1a1a]"
+                  >
+                    Try again
+                  </button>
+                </>
+              )}
+
+              {typeof options === "object" && !options.email && !options.google && (
+                <ErrorBox text="Sign-in is not set up on the server yet." />
+              )}
+
+              {typeof options === "object" && (options.email || options.google) && (
+                <p className="leading-relaxed text-[#b3b3b3]">
+                  Sign in to keep your Gemini key, chosen AI, and writing style on every
+                  device.
+                  {canEmail ? " We will email you a 6 digit code. No password needed." : ""}
+                </p>
+              )}
+
+              {canEmail && (
+                <>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && email.trim() && !busy && sendCode()}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-white placeholder-[#555555] outline-none focus:border-white"
+                  />
+                  <button
+                    onClick={sendCode}
+                    disabled={busy || !email.trim()}
+                    className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4] disabled:opacity-40"
+                  >
+                    {busy ? "Sending..." : "Email me a code"}
+                  </button>
+                </>
+              )}
 
               {error && <ErrorBox text={error} />}
 
-              <button
-                onClick={sendCode}
-                disabled={busy || !email.trim()}
-                className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4] disabled:opacity-40"
-              >
-                {busy ? "Sending..." : "Email me a code"}
-              </button>
-
-              {googleClientId && !isTauri && (
-                <>
-                  <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[#555555]">
-                    <span className="h-px flex-1 bg-[#222222]" />
-                    or
-                    <span className="h-px flex-1 bg-[#222222]" />
-                  </div>
-                  <div ref={googleRef} className="flex justify-center" />
-                </>
+              {canEmail && canGoogle && (
+                <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[#555555]">
+                  <span className="h-px flex-1 bg-[#222222]" />
+                  or
+                  <span className="h-px flex-1 bg-[#222222]" />
+                </div>
               )}
-              {googleClientId && isTauri && (
+              {canGoogle && <div ref={googleRef} className="flex justify-center" />}
+
+              {typeof options === "object" && options.google && isTauri && (
                 <p className="text-[10px] leading-relaxed text-[#666666]">
-                  Google sign-in works on the web version for now. In the Mac app, use
-                  the email code.
+                  {canEmail
+                    ? "Google sign-in works on the web version for now. In the Mac app, use the email code."
+                    : "Google sign-in for the Mac app is coming soon. For now, use the web version."}
                 </p>
               )}
             </>

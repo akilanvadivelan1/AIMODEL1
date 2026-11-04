@@ -120,12 +120,20 @@ export function describeError(err: unknown): string {
       return "Google sign-in did not work. Please try again.";
     case "google_not_configured":
       return "Google sign-in is not turned on yet.";
+    case "email_not_configured":
+      return "Emailed codes are not turned on yet. Try signing in with Google.";
+    case "server_not_configured":
+      return "The sign-in server is not set up correctly yet. Please try again later.";
     default:
       return "Something went wrong. Please try again.";
   }
 }
 
 export const api = {
+  /** Which sign-in options the server has turned on. */
+  config: () =>
+    call<{ email: boolean; google: boolean }>("/auth/config", { auth: false }),
+
   startEmail: (email: string) =>
     call<{ ok: true }>("/auth/email/start", { method: "POST", body: { email }, auth: false }),
 
