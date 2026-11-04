@@ -38,7 +38,7 @@ export function ModelSwitcher({ value, onChange }: Props) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center space-x-2 rounded-lg border border-[#2f2f2f] bg-[#1a1a1a] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#252525]"
+        className="flex items-center space-x-2 whitespace-nowrap rounded-lg border border-[#2f2f2f] bg-[#1a1a1a] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#252525]"
       >
         <span className="h-2 w-2 rounded-full bg-white" />
         <span>{label(value)}</span>

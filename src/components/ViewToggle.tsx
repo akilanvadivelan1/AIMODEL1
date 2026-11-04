@@ -7,11 +7,11 @@ interface Props {
 
 export function ViewToggle({ value, onChange }: Props) {
   return (
-    <div className="hidden items-center rounded-lg border border-[#252525] bg-[#0d0d0d] p-0.5 text-xs sm:flex">
+    <div className="hidden items-center rounded-lg border border-[#252525] bg-[#0d0d0d] p-0.5 text-xs xl:flex">
       <button
         onClick={() => onChange("pipeline")}
         className={[
-          "flex items-center space-x-1.5 rounded-md px-3 py-1 font-semibold transition-all",
+          "flex items-center space-x-1.5 whitespace-nowrap rounded-md px-3 py-1 font-semibold transition-all",
           value === "pipeline"
             ? "bg-white text-black shadow-sm"
             : "text-[#888888] hover:text-white",
@@ -25,7 +25,7 @@ export function ViewToggle({ value, onChange }: Props) {
       <button
         onClick={() => onChange("unified")}
         className={[
-          "flex items-center space-x-1.5 rounded-md px-3 py-1 font-semibold transition-all",
+          "flex items-center space-x-1.5 whitespace-nowrap rounded-md px-3 py-1 font-semibold transition-all",
           value === "unified"
             ? "bg-white text-black shadow-sm"
             : "text-[#888888] hover:text-white",

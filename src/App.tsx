@@ -319,7 +319,7 @@ export default function App() {
               <button
                 onClick={() => openExternal(SITE_URL)}
                 title="Open the OmniDesk website"
-                className="flex items-center gap-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -330,7 +330,7 @@ export default function App() {
               <a
                 href="#/"
                 title="Back to OmniDesk site"
-                className="flex items-center gap-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -354,7 +354,7 @@ export default function App() {
                     : "Sign in (accounts are not switched on yet)"
               }
               className={[
-                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 user
                   ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
                   : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
@@ -370,7 +370,7 @@ export default function App() {
               onClick={() => setStyleOpen(true)}
               title="Teach OmniDesk your writing style"
               className={[
-                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 hasStyle
                   ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
                   : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
@@ -379,13 +379,13 @@ export default function App() {
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
-              <span className="hidden md:inline">{hasStyle ? "My style" : "Teach style"}</span>
+              <span className="hidden lg:inline">{hasStyle ? "My style" : "Teach style"}</span>
             </button>
             <button
               onClick={() => setKeyModalOpen(true)}
               title={hasKey ? "Gemini connected — manage key" : "Connect a real model (API key)"}
               className={[
-                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 hasKey
                   ? "border-white bg-white text-black"
                   : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
@@ -394,18 +394,18 @@ export default function App() {
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
               </svg>
-              <span className="hidden md:inline">{hasKey ? "Connected" : "Connect"}</span>
+              <span className="hidden sm:inline">{hasKey ? "Connected" : "Connect"}</span>
             </button>
             <button
               onClick={() => setMatrixOpen(true)}
-              className="flex items-center space-x-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#cccccc] transition-all hover:border-white hover:bg-white hover:text-black"
+              className="flex items-center space-x-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#cccccc] transition-all hover:border-white hover:bg-white hover:text-black"
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span className="hidden md:inline">Strengths</span>
+              <span className="hidden lg:inline">Strengths</span>
             </button>
             {busyMsgId ? (
               <button
