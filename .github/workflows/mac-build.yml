@@ -34,13 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web UI
-        run: npm run build
-
       - name: Generate app icons from source PNG
         run: npm run tauri:icon
 
       - name: Build Tauri Mac app
+        # Tauri runs its own beforeBuildCommand (with OMNIDESK_TARGET=desktop)
+        # so the web UI is built with the correct "/" base for the desktop app.
         run: npm run tauri:build
 
       - name: Upload Mac app artifact

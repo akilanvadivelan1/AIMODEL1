@@ -1,9 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// base must match the repo name so assets resolve on GitHub Pages
-// (served from https://<user>.github.io/AIMODEL1/).
+// The web build is served from a subpath on GitHub Pages
+// (https://<user>.github.io/AIMODEL1/), so it needs base "/AIMODEL1/".
+// The desktop (Tauri) build loads assets from the app root, so it needs "/".
+// The Tauri scripts set OMNIDESK_TARGET=desktop to switch the base.
+const isDesktop = process.env.OMNIDESK_TARGET === "desktop";
+
 export default defineConfig({
-  base: "/AIMODEL1/",
+  base: isDesktop ? "/" : "/AIMODEL1/",
   plugins: [react()],
 });

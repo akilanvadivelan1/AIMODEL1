@@ -33,10 +33,21 @@ function load(): Conversation[] {
   }
 }
 
+const SELECTION_KEY = "omnidesk.selection.v1";
+
+function loadSelection(): Selection {
+  try {
+    const raw = localStorage.getItem(SELECTION_KEY);
+    return raw ? (JSON.parse(raw) as Selection) : { kind: "quad" };
+  } catch {
+    return { kind: "quad" };
+  }
+}
+
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(load);
   const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
-  const [selection, setSelection] = useState<Selection>({ kind: "quad" });
+  const [selection, setSelection] = useState<Selection>(loadSelection);
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
@@ -78,6 +89,14 @@ export default function App() {
       /* quota exceeded: skip persisting this cycle */
     }
   }, [conversations]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SELECTION_KEY, JSON.stringify(selection));
+    } catch {
+      /* ignore */
+    }
+  }, [selection]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
