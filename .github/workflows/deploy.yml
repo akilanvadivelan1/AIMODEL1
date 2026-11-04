@@ -30,6 +30,11 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Set these in the repo under Settings > Secrets and variables > Actions > Variables.
+          # When API_URL is empty, accounts are switched off and the app works locally only.
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

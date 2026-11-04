@@ -42,8 +42,9 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
         <div className="space-y-4 p-5 text-xs">
           <p className="leading-relaxed text-[#b3b3b3]">
             Paste a free <strong className="text-white">Google Gemini API key</strong> to
-            get real answers. It is stored only in this browser (localStorage) and
-            never sent anywhere except directly to Google.
+            get real answers. It is saved on this device. Questions go straight from
+            your device to Google. If you sign in to OmniDesk, the key is also stored
+            encrypted on your account so it follows you to other devices.
           </p>
 
           <a
@@ -91,9 +92,8 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
           </div>
 
           <p className="border-t border-[#222222] pt-3 text-[10px] leading-relaxed text-[#666666]">
-            Note: this is a public site, so a key here is visible to anyone using
-            this browser profile. Fine for a personal tool. For a shared app we would
-            move the key behind a backend.
+            Note: anyone who uses this browser profile can use the saved key. Only
+            save it on a device you trust.
           </p>
         </div>
       </div>

@@ -16,7 +16,20 @@ import { MessageBubble } from "./components/MessageBubble";
 import { Composer, type CapabilityKey } from "./components/Composer";
 import { Hero } from "./components/Hero";
 import { ApiKeyModal } from "./components/ApiKeyModal";
+import { StyleModal } from "./components/StyleModal";
+import { AccountModal } from "./components/AccountModal";
 import { getApiKey } from "./models/apiKey";
+import { loadSelection, saveSelection } from "./models/prefs";
+import { getStyleProfile } from "./models/styleProfile";
+import {
+  api,
+  backendEnabled,
+  BackendError,
+  clearToken,
+  getToken,
+  type BackendUser,
+} from "./lib/backend";
+import { pullSettings, resetSync, schedulePush } from "./lib/sync";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
 
@@ -33,17 +46,6 @@ function load(): Conversation[] {
   }
 }
 
-const SELECTION_KEY = "omnidesk.selection.v1";
-
-function loadSelection(): Selection {
-  try {
-    const raw = localStorage.getItem(SELECTION_KEY);
-    return raw ? (JSON.parse(raw) as Selection) : { kind: "quad" };
-  } catch {
-    return { kind: "quad" };
-  }
-}
-
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(load);
   const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
@@ -52,6 +54,10 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [user, setUser] = useState<BackendUser | null>(null);
+  const [hasStyle, setHasStyle] = useState(() => !!getStyleProfile());
   const [hasKey, setHasKey] = useState(() => !!getApiKey());
   const [busyMsgId, setBusyMsgId] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>({
@@ -90,13 +96,54 @@ export default function App() {
     }
   }, [conversations]);
 
+  // Remember the chosen AI, and sync it to the account if signed in.
   useEffect(() => {
-    try {
-      localStorage.setItem(SELECTION_KEY, JSON.stringify(selection));
-    } catch {
-      /* ignore */
-    }
+    saveSelection(selection);
+    schedulePush();
   }, [selection]);
+
+  // If a session was saved from last time, restore it and pull the settings.
+  useEffect(() => {
+    if (!backendEnabled || !getToken()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await api.me();
+        if (cancelled) return;
+        setUser(me.user);
+        await applyServerSettings();
+      } catch (e) {
+        if (e instanceof BackendError && e.status === 401) {
+          clearToken();
+          resetSync();
+          if (!cancelled) setUser(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function applyServerSettings() {
+    const server = await pullSettings();
+    if (server.selection) setSelection(server.selection);
+    setHasKey(!!getApiKey());
+    setHasStyle(!!getStyleProfile());
+  }
+
+  async function handleSignedIn(u: BackendUser) {
+    setUser(u);
+    try {
+      await applyServerSettings();
+    } catch {
+      /* settings will sync on the next change */
+    }
+  }
+
+  function handleSignedOut() {
+    setUser(null);
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -271,6 +318,39 @@ export default function App() {
           <ViewToggle value={viewMode} onChange={setViewMode} />
 
           <div className="flex items-center space-x-2">
+            {backendEnabled && (
+              <button
+                onClick={() => setAccountOpen(true)}
+                title={user ? `Signed in as ${user.email}` : "Sign in to sync your settings"}
+                className={[
+                  "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                  user
+                    ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
+                    : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+                ].join(" ")}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="hidden md:inline">{user ? "Synced" : "Sign in"}</span>
+              </button>
+            )}
+            <button
+              onClick={() => setStyleOpen(true)}
+              title="Teach OmniDesk your writing style"
+              className={[
+                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                hasStyle
+                  ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
+                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+              ].join(" ")}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              <span className="hidden md:inline">{hasStyle ? "My style" : "Teach style"}</span>
+            </button>
             <button
               onClick={() => setKeyModalOpen(true)}
               title={hasKey ? "Gemini connected — manage key" : "Connect a real model (API key)"}
@@ -348,7 +428,25 @@ export default function App() {
       <ApiKeyModal
         open={keyModalOpen}
         onClose={() => setKeyModalOpen(false)}
-        onSaved={() => setHasKey(!!getApiKey())}
+        onSaved={() => {
+          setHasKey(!!getApiKey());
+          schedulePush();
+        }}
+      />
+      <StyleModal
+        open={styleOpen}
+        onClose={() => setStyleOpen(false)}
+        onSaved={() => {
+          setHasStyle(!!getStyleProfile());
+          schedulePush();
+        }}
+      />
+      <AccountModal
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        user={user}
+        onSignedIn={handleSignedIn}
+        onSignedOut={handleSignedOut}
       />
     </div>
   );

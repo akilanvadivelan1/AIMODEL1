@@ -105,8 +105,9 @@ export function StyleModal({ open, onClose, onSaved }: Props) {
           )}
 
           <p className="border-t border-[#222222] pt-3 text-[10px] leading-relaxed text-[#666666]">
-            Stored only in this browser. Once saved, ask OmniDesk to "write an email
-            to..." and it will match your voice.
+            Saved on this device. If you are signed in, it also syncs to your account.
+            Once saved, ask OmniDesk to "write an email to..." and it will match your
+            voice.
           </p>
         </div>
 

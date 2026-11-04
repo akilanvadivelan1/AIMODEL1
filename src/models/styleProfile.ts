@@ -30,6 +30,16 @@ export function getStyleSample(): string {
   }
 }
 
+/** Saves a profile that came from somewhere else, such as the account sync. */
+export function importStyleProfile(profile: StyleProfile): void {
+  try {
+    localStorage.setItem(SAMPLE_KEY, profile.sample);
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
 export function clearStyleProfile(): void {
   try {
     localStorage.removeItem(SAMPLE_KEY);

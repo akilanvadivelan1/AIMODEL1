@@ -41,6 +41,9 @@ jobs:
         # Tauri runs its own beforeBuildCommand (with OMNIDESK_TARGET=desktop)
         # so the web UI is built with the correct "/" base for the desktop app.
         run: npm run tauri:build
+        env:
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
       - name: Upload Mac app artifact
         uses: actions/upload-artifact@v4

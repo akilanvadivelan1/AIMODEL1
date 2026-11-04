@@ -7,3 +7,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vite
+
+# Backend
+backend/.env
+backend/data
+backend/dist
+*.db
+*.db-wal
+*.db-shm
+tsconfig.tsbuildinfo

@@ -6,7 +6,8 @@
   "build": {
     "frontendDist": "../../dist",
     "beforeBuildCommand": "OMNIDESK_TARGET=desktop VITE_OMNIDESK_DESKTOP=1 npm run build",
-    "beforeDevCommand": "OMNIDESK_TARGET=desktop VITE_OMNIDESK_DESKTOP=1 npm run dev"
+    "beforeDevCommand": "OMNIDESK_TARGET=desktop VITE_OMNIDESK_DESKTOP=1 npm run dev",
+    "devUrl": "http://localhost:5173"
   },
   "app": {
     "windows": [
@@ -24,11 +25,15 @@
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app"],
+    "targets": [
+      "dmg",
+      "app"
+    ],
     "category": "Productivity",
     "shortDescription": "Your personal AI desk",
     "longDescription": "OmniDesk is a personal AI assistant that writes in your voice and is one shortcut away.",

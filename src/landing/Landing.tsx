@@ -119,7 +119,7 @@ function Features() {
     },
     {
       title: "Summon from anywhere",
-      body: "Press Option + / and a quick-search bar appears over any screen. Type your question, get the answer, and stay in your flow.",
+      body: "Press Option + / and the OmniDesk logo appears in the top right of your screen. Hover over it to open a search bar, type your question, and get the answer without leaving your work.",
       badge: "OPTION + /",
     },
     {
@@ -273,7 +273,7 @@ function HowItWorks() {
     {
       n: "01",
       title: "Summon it",
-      body: "Press Option + / and a quick-search bar appears. No hunting for a tab, no switching apps. Just ask.",
+      body: "Press Option + / and the OmniDesk logo appears in the top right of your screen. Hover over it, and a search bar opens. No hunting for a tab, no switching apps. Just ask.",
     },
     {
       n: "02",

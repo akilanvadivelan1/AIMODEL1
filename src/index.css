@@ -100,3 +100,12 @@ html.app-view #root {
   width: 1.2em;
   text-align: left;
 }
+
+/* The Mac quick-search widget lives in its own transparent, borderless window. */
+html.widget-view,
+html.widget-view body,
+html.widget-view #root {
+  height: 100%;
+  overflow: hidden;
+  background: transparent !important;
+}
