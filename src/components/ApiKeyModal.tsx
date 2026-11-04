@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getApiKey, setApiKey } from "../models/apiKey";
+import { isTauri } from "../lib/backend";
+import { openExternal } from "../lib/external";
 
 interface Props {
   open: boolean;
@@ -51,6 +53,13 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
             href="https://aistudio.google.com/app/apikey"
             target="_blank"
             rel="noreferrer"
+            onClick={(e) => {
+              // The Mac app cannot follow links by itself, so hand it to the browser.
+              if (isTauri) {
+                e.preventDefault();
+                openExternal("https://aistudio.google.com/app/apikey");
+              }
+            }}
             className="inline-flex items-center gap-1.5 text-[#cccccc] underline decoration-[#444444] underline-offset-2 hover:text-white"
           >
             Get a free key at aistudio.google.com ↗

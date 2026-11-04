@@ -39,6 +39,12 @@ function Nav() {
         {/* Top-right actions: Web version button + prominent Download for Mac */}
         <div className="flex items-center gap-2.5">
           <a
+            href="#/app/signin"
+            className="px-2 py-1.5 text-xs font-semibold text-[#cccccc] transition-colors hover:text-white"
+          >
+            Sign in
+          </a>
+          <a
             href="#/app"
             className="rounded-lg border border-[#333333] bg-[#141414] px-3.5 py-1.5 text-xs font-semibold text-white transition-all hover:border-white"
           >

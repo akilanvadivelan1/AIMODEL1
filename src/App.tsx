@@ -27,8 +27,10 @@ import {
   BackendError,
   clearToken,
   getToken,
+  isTauri,
   type BackendUser,
 } from "./lib/backend";
+import { openExternal, SITE_URL } from "./lib/external";
 import { pullSettings, resetSync, schedulePush } from "./lib/sync";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
@@ -55,7 +57,10 @@ export default function App() {
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
+  // The landing page's Sign in link opens the app with the sign-in window ready.
+  const [accountOpen, setAccountOpen] = useState(
+    () => window.location.hash === "#/app/signin"
+  );
   const [user, setUser] = useState<BackendUser | null>(null);
   const [hasStyle, setHasStyle] = useState(() => !!getStyleProfile());
   const [hasKey, setHasKey] = useState(() => !!getApiKey());
@@ -95,6 +100,13 @@ export default function App() {
       /* quota exceeded: skip persisting this cycle */
     }
   }, [conversations]);
+
+  // Tidy the address once the sign-in window has opened from the landing page.
+  useEffect(() => {
+    if (window.location.hash === "#/app/signin") {
+      window.history.replaceState(null, "", "#/app");
+    }
+  }, []);
 
   // Remember the chosen AI, and sync it to the account if signed in.
   useEffect(() => {
@@ -302,40 +314,58 @@ export default function App() {
                 </svg>
               </button>
             )}
-            <a
-              href="#/"
-              title="Back to OmniDesk site"
-              className="flex items-center gap-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="hidden sm:inline">Site</span>
-            </a>
+            {isTauri ? (
+              // The Mac app has no landing page of its own, so open the website in the browser.
+              <button
+                onClick={() => openExternal(SITE_URL)}
+                title="Open the OmniDesk website"
+                className="flex items-center gap-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="hidden sm:inline">Website</span>
+              </button>
+            ) : (
+              <a
+                href="#/"
+                title="Back to OmniDesk site"
+                className="flex items-center gap-1.5 rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="hidden sm:inline">Site</span>
+              </a>
+            )}
             <ModelSwitcher value={selection} onChange={setSelection} />
           </div>
 
           <ViewToggle value={viewMode} onChange={setViewMode} />
 
           <div className="flex items-center space-x-2">
-            {backendEnabled && (
-              <button
-                onClick={() => setAccountOpen(true)}
-                title={user ? `Signed in as ${user.email}` : "Sign in to sync your settings"}
-                className={[
-                  "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
-                  user
-                    ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
-                    : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
-                ].join(" ")}
-              >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span className="hidden md:inline">{user ? "Synced" : "Sign in"}</span>
-              </button>
-            )}
+            <button
+              onClick={() => setAccountOpen(true)}
+              title={
+                user
+                  ? `Signed in as ${user.email}`
+                  : backendEnabled
+                    ? "Sign in to sync your settings"
+                    : "Sign in (accounts are not switched on yet)"
+              }
+              className={[
+                "flex items-center space-x-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
+                user
+                  ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
+                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+              ].join(" ")}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="hidden sm:inline">{user ? "Synced" : "Sign in"}</span>
+            </button>
             <button
               onClick={() => setStyleOpen(true)}
               title="Teach OmniDesk your writing style"

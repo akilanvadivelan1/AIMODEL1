@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   api,
+  backendEnabled,
   clearToken,
   describeError,
   googleClientId,
@@ -111,6 +112,48 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
   }, [open, user, step, onClose]);
 
   if (!open) return null;
+
+  // No backend address was set when this copy of the app was built.
+  if (!backendEnabled && !user) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#333333] bg-[#121212] font-mono shadow-2xl">
+          <div className="flex items-center justify-between border-b border-[#252525] bg-[#0a0a0a] px-5 py-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">Sign in</h3>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1 text-[#888888] transition-colors hover:bg-[#222222] hover:text-white"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="space-y-4 p-5 text-xs">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#3a3a3a] px-3 py-1 text-[10px] uppercase tracking-widest text-[#aaaaaa]">
+              <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-white" />
+              Coming soon
+            </div>
+            <p className="leading-relaxed text-[#b3b3b3]">
+              Accounts are not switched on yet. When they are, you will be able to sign
+              in with an emailed code or with Google, and your Gemini key, chosen AI,
+              and writing style will follow you to every device.
+            </p>
+            <p className="leading-relaxed text-[#777777]">
+              Until then, OmniDesk saves those things on this device, so you only need
+              to set them up once here.
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4]"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function sendCode() {
     setBusy(true);

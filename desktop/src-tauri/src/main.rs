@@ -66,6 +66,22 @@ fn set_widget_sticky(sticky: bool) {
     WIDGET_STICKY.store(sticky, Ordering::SeqCst);
 }
 
+/// Open a web page in the user's default browser. Only plain https links are allowed.
+#[tauri::command]
+fn open_external(url: String) {
+    if !url.starts_with("https://") || url.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(&url).spawn();
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+    }
+}
+
 /// Bring the full OmniDesk window to the front.
 #[tauri::command]
 fn open_main_window(app: AppHandle) {
@@ -128,7 +144,8 @@ fn main() {
             resize_widget,
             hide_widget,
             set_widget_sticky,
-            open_main_window
+            open_main_window,
+            open_external
         ])
         .setup(move |app| {
             // The small, borderless, see-through window pinned to the top right.
