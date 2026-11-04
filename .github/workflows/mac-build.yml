@@ -38,7 +38,7 @@ jobs:
         run: npm run build
 
       - name: Generate app icons from source PNG
-        run: npm run tauri -- icon desktop/src-tauri/icons/icon.png
+        run: npm run tauri:icon
 
       - name: Build Tauri Mac app
         run: npm run tauri:build
