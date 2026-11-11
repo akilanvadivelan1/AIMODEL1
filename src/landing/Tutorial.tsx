@@ -105,19 +105,23 @@ export function Tutorial() {
   return (
     <Section
       id="tutorial"
-      index="03"
+      index="02"
       label="get started"
-      title="From zero to your first answer in five steps."
+      title={
+        <>
+          From zero to your first answer in <em className="italic text-accent">five steps.</em>
+        </>
+      }
       intro="No account, no card. Watch the steps play, or click any step to jump to it."
     >
       <div
-        className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12"
+        className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-14"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
       >
-        <ol className="space-y-2">
+        <ol className="space-y-3">
           {STEPS.map((s, i) => {
             const on = i === active;
             return (
@@ -125,50 +129,54 @@ export function Tutorial() {
                 <button
                   onClick={() => setActive(i)}
                   aria-current={on ? "step" : undefined}
-                  className={`group w-full rounded-2xl border p-4 text-left transition-all duration-300 ${
-                    on ? "glass glass-tint glass-static" : "border-transparent hover:border-white/10 hover:bg-white/[0.03]"
+                  className={`group w-full rounded-2xl border p-5 text-left transition-all duration-300 ${
+                    on
+                      ? "border-ink bg-cream shadow-[5px_5px_0_0_#16130e]"
+                      : "border-transparent hover:border-line hover:bg-cream/60"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs transition-colors ${
-                        on ? "bg-white text-ink-950" : "border border-white/20 text-haze group-hover:text-white"
+                      className={`font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl transition-colors ${
+                        on ? "bg-accent text-paper" : "border border-ink/25 text-muted group-hover:border-ink group-hover:text-ink"
                       }`}
                     >
                       {i + 1}
                     </span>
-                    <span className={`text-base font-semibold ${on ? "text-white" : "text-white/70"}`}>{s.title}</span>
+                    <span className={`font-display text-2xl leading-tight md:text-3xl ${on ? "text-ink" : "text-muted"}`}>
+                      {s.title}
+                    </span>
                   </div>
 
                   {on && (
-                    <div className="pop-in mt-4 pl-10">
-                      <p className="text-sm leading-relaxed text-white/85">{s.example}</p>
-                      <ol className="mt-3 space-y-1.5 text-sm text-white/70">
+                    <div className="mt-5 pl-[52px]">
+                      <p className="text-[15px] leading-relaxed text-ink">{s.example}</p>
+                      <ol className="mt-4 space-y-2 text-[15px] text-muted">
                         {s.actions.map((a, n) => (
-                          <li key={a} className="flex gap-2.5">
-                            <span className="font-mono text-xs text-accent">{n + 1}.</span>
+                          <li key={a} className="flex gap-3">
+                            <span className="font-mono text-xs leading-6 text-accent">{n + 1}.</span>
                             <span>{a}</span>
                           </li>
                         ))}
                       </ol>
-                      <p className="mt-3 border-l-2 border-sunrise/60 pl-3 text-xs leading-relaxed text-haze">{s.note}</p>
+                      <p className="mt-4 border-l-2 border-accent pl-3 text-sm leading-relaxed text-muted">{s.note}</p>
                       {s.link && (
                         <a
                           href={s.link.href}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="glass glass-chip mt-4 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold text-white"
+                          className="btn btn-ghost btn-sm mt-5"
                         >
                           {s.link.label}
                           <Arrow className="h-3.5 w-3.5" diagonal />
                         </a>
                       )}
                       {auto && (
-                        <div className="mt-4 h-0.5 overflow-hidden rounded bg-white/10" aria-hidden>
+                        <div className="mt-5 h-0.5 overflow-hidden rounded bg-line" aria-hidden>
                           <div
                             key={active}
-                            className="step-fill h-full bg-gradient-to-r from-accent to-sunrise"
+                            className="step-fill h-full bg-accent"
                             style={{ animationDuration: `${STEP_MS}ms`, animationPlayState: paused ? "paused" : "running" }}
                             onAnimationEnd={next}
                           />
@@ -186,7 +194,7 @@ export function Tutorial() {
           <div key={step.id} className="pop-in">
             <Stage />
           </div>
-          <p className="mt-3 text-center font-mono text-[11px] text-haze">
+          <p className="mt-4 text-center font-mono text-[11px] text-muted">
             Example screens. The real app looks the same, with your own chats.
           </p>
         </div>

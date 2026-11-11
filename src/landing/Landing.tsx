@@ -1,18 +1,7 @@
 import { useEffect, useState } from "react";
 import { SKILLS, type ToolId } from "../models/skills";
-import { onSpotlightMove } from "../hooks/spotlight";
 import { useReveal } from "../hooks/useReveal";
-import {
-  Arrow,
-  CountUp,
-  CursorDots,
-  LiquidFilter,
-  Marquee,
-  ScrollProgress,
-  Section,
-  Typewriter,
-  WaveBackground,
-} from "./effects";
+import { Arrow, CountUp, RollingWord, Section } from "./effects";
 import { DesktopDemo, Logo } from "./stages";
 import { Tutorial } from "./Tutorial";
 import "./landing.css";
@@ -33,34 +22,11 @@ export function Landing() {
   }, []);
 
   return (
-    <div className="site relative min-h-screen overflow-x-clip bg-ink-950 text-white antialiased">
-      <LiquidFilter />
-      <div className="aurora" aria-hidden>
-        <span className="a1" />
-        <span className="a2" />
-        <span className="a3" />
-      </div>
-      <div className="noise-overlay" />
-      <ScrollProgress />
-      <CursorDots />
+    <div className="site min-h-screen overflow-x-clip">
       <Nav />
       <main className="relative z-10">
         <Hero />
-        <Marquee
-          label="What OmniDesk can do"
-          items={[
-            "Search the web with sources",
-            "Think before answering",
-            "Run real Python",
-            "Read images and PDFs",
-            "Write in your voice",
-            "Turn ideas into specs",
-            "Paste screenshots",
-            "Mac shortcut",
-            "Bring your own key",
-          ]}
-        />
-        <Stats />
+        <Facts />
         <SkillsSection />
         <Tutorial />
         <Download />
@@ -84,7 +50,7 @@ const NAV = [
 function Nav() {
   const [active, setActive] = useState("");
 
-  // Highlight the link for whichever section is crossing the middle of the screen.
+  // Mark the link for whichever section is crossing the middle of the screen.
   useEffect(() => {
     const els = NAV.map((l) => document.getElementById(l.href.slice(1))).filter(
       (el): el is HTMLElement => el !== null
@@ -100,13 +66,13 @@ function Nav() {
   }, []);
 
   return (
-    <header className="glass-bar fixed inset-x-0 top-0 z-50">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <a href="#top" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-ink-950">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-paper">
             <Logo className="h-5 w-5" />
           </span>
-          <span className="font-mono text-sm font-medium uppercase tracking-[0.18em]">OmniDesk</span>
+          <span className="font-display text-[26px] leading-none">OmniDesk</span>
         </a>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
@@ -117,13 +83,13 @@ function Nav() {
                 key={l.href}
                 href={l.href}
                 aria-current={on ? "true" : undefined}
-                className={`relative rounded-md px-3 py-2 text-sm transition-colors duration-200 hover:text-white ${
-                  on ? "text-white" : "text-haze"
+                className={`relative rounded-md px-3 py-2 text-sm transition-colors hover:text-ink ${
+                  on ? "text-ink" : "text-muted"
                 }`}
               >
                 {l.label}
                 <span
-                  className={`absolute inset-x-3 -bottom-0.5 h-px bg-gradient-to-r from-accent to-sunrise transition-opacity duration-300 ${
+                  className={`absolute inset-x-2.5 bottom-1.5 -z-10 h-2 rounded-sm bg-mark transition-opacity duration-300 ${
                     on ? "opacity-100" : "opacity-0"
                   }`}
                 />
@@ -133,22 +99,13 @@ function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a
-            href="#/app/signin"
-            className="hidden px-2 py-1.5 text-sm font-medium text-white/80 transition-colors hover:text-white sm:block"
-          >
+          <a href="#/app/signin" className="hidden px-2 text-sm font-medium text-muted transition-colors hover:text-ink sm:block">
             Sign in
           </a>
-          <a
-            href="#/app"
-            className="glass glass-chip rounded-lg px-3 py-2 text-xs font-semibold text-white sm:px-3.5"
-          >
+          <a href="#/app" className="btn btn-ghost btn-sm">
             Web version
           </a>
-          <a
-            href="#download"
-            className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-ink-950 transition-opacity hover:opacity-90 sm:px-3.5"
-          >
+          <a href="#download" className="btn btn-solid btn-sm">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d={APPLE_PATH} />
             </svg>
@@ -163,87 +120,74 @@ function Nav() {
 
 /* ----------------------------------------------------------------------- */
 
-const HEADLINE = ["One", "AI.", "Every", "strength."];
+const ROLL = [
+  "research with sources",
+  "think it through",
+  "write in your voice",
+  "run the numbers",
+  "write the code",
+  "plan the build",
+];
 
 function Hero() {
   return (
-    <section id="top" className="grid-backdrop relative flex min-h-screen items-center overflow-hidden px-6 pb-24 pt-28">
-      <WaveBackground />
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-accent-deep/30 blur-[140px]" />
-      <div className="pointer-events-none absolute -top-10 right-[8%] h-[260px] w-[360px] rounded-full bg-sunrise/15 blur-[120px]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-ink-950 to-transparent" />
-
-      <div className="relative mx-auto grid w-full max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+    <section id="top" className="relative px-6 pb-24 pt-32 md:pb-28 md:pt-40">
+      <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[1.08fr_0.92fr]">
         <div>
-          <p className="animate-fade-up font-mono text-sm uppercase tracking-[0.18em] text-accent">
-            <Typewriter text="> your personal ai desk" />
-          </p>
+          <div className="rise inline-flex items-center gap-2 rounded-full border border-line bg-cream px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            Runs on Google Gemini. Bring your own key.
+          </div>
 
           <h1
             aria-label="One AI. Every strength."
-            className="text-balance mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
+            className="font-display mt-7 text-[clamp(3.6rem,9vw,7.4rem)] leading-[0.92] tracking-[-0.02em]"
           >
-            {HEADLINE.map((w, i) => (
-              <span
-                key={w}
-                aria-hidden
-                className={`word-reveal mr-[0.25em] ${
-                  i === HEADLINE.length - 1
-                    ? "bg-gradient-to-r from-accent-soft via-accent to-sunrise bg-clip-text text-transparent"
-                    : ""
-                }`}
-                style={{ animationDelay: `${300 + i * 140}ms` }}
-              >
-                {w}
-              </span>
-            ))}
+            <span aria-hidden className="rise block" style={{ animationDelay: "100ms" }}>
+              One AI.
+            </span>
+            <span aria-hidden className="rise block" style={{ animationDelay: "260ms" }}>
+              Every <em className="mark italic">strength.</em>
+            </span>
           </h1>
 
-          <p
-            className="animate-fade-up text-balance mt-6 max-w-xl text-lg text-white/85 md:text-xl"
-            style={{ animationDelay: "900ms" }}
-          >
-            OmniDesk sets up Google Gemini to research with sources, think hard problems through, run real
-            code for exact math, write in your voice, and turn ideas into plans.
-          </p>
-          <p
-            className="animate-fade-up text-balance mt-3 max-w-xl text-base text-haze"
-            style={{ animationDelay: "1050ms" }}
-          >
-            Bring your own free Gemini key. No account, no subscription.
+          <p className="rise font-display mt-8 text-3xl leading-tight md:text-[2.4rem]" style={{ animationDelay: "480ms" }}>
+            Ask it to{" "}
+            <em className="italic text-accent">
+              <RollingWord words={ROLL} />
+            </em>
           </p>
 
-          <div className="animate-fade-up mt-9 flex flex-wrap items-center gap-3" style={{ animationDelay: "1200ms" }}>
-            <button
-              onClick={openApp}
-              className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-accent-deep to-accent px-5 py-3 text-sm font-semibold text-white shadow-[0_0_28px_-6px_rgba(155,123,234,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_36px_-4px_rgba(155,123,234,0.95)]"
-            >
+          <p className="rise mt-5 max-w-xl text-lg leading-relaxed text-muted" style={{ animationDelay: "640ms" }}>
+            OmniDesk sets up Google Gemini for the job in front of you: sources for research, careful thinking for
+            hard problems, real code for exact math, and your own voice for writing. No account, no subscription.
+          </p>
+
+          <div className="rise mt-9 flex flex-wrap items-center gap-3" style={{ animationDelay: "800ms" }}>
+            <button onClick={openApp} className="btn btn-solid">
               Open the web version
-              <Arrow className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <Arrow />
             </button>
-            <a href="#download" className="glass glass-chip flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold text-white">
+            <a href="#download" className="btn btn-ghost">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d={APPLE_PATH} />
               </svg>
               Download for Mac
             </a>
-            <a href="#tutorial" className="px-2 py-3 text-sm font-medium text-haze transition-colors hover:text-white">
+            <a href="#tutorial" className="px-2 py-3 text-sm font-semibold text-muted underline decoration-line decoration-2 underline-offset-4 transition-colors hover:text-ink hover:decoration-accent">
               See how it works
             </a>
           </div>
         </div>
 
-        <div className="animate-fade-up float-y" style={{ animationDelay: "700ms" }}>
-          <DesktopDemo height="h-[360px]" />
-          <p className="mt-3 text-center font-mono text-[11px] text-haze">The Mac shortcut, Option + /</p>
+        <div className="rise relative" style={{ animationDelay: "500ms" }}>
+          <div className="float-y">
+            <DesktopDemo height="h-[390px]" />
+          </div>
+          <div className="absolute -bottom-5 -left-3 -rotate-6 rounded-xl border-2 border-ink bg-mark px-4 py-2 font-mono text-xs font-semibold shadow-[3px_3px_0_0_#16130e]">
+            Mac shortcut: Option + /
+          </div>
         </div>
-      </div>
-
-      <div
-        aria-hidden
-        className="absolute bottom-8 left-1/2 hidden h-9 w-5 -translate-x-1/2 justify-center rounded-full border border-white/25 pt-2 sm:flex"
-      >
-        <span className="scroll-hint-dot h-1.5 w-1 rounded-full bg-sunrise" />
       </div>
     </section>
   );
@@ -258,26 +202,20 @@ const STATS = [
   { value: 0, label: "accounts required" },
 ];
 
-function Stats() {
+function Facts() {
   const { ref, shown } = useReveal();
   return (
-    <section className="px-6 py-20">
-      <div
-        ref={ref}
-        className={`mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 transition-all duration-700 lg:grid-cols-4 ${
-          shown ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
-        }`}
-      >
-        {STATS.map((s, i) => (
+    <section className="relative z-10 border-y border-line bg-cream">
+      <div ref={ref} className="mx-auto grid max-w-6xl grid-cols-2 md:grid-cols-4">
+        {STATS.map((s) => (
           <div
             key={s.label}
-            className="border-l border-white/10 pl-5 transition-all duration-700"
-            style={{ transitionDelay: `${i * 80}ms` }}
+            className="border-l border-line px-6 py-9 first:border-l-0 max-md:odd:border-l-0 md:px-8"
           >
-            <div className="bg-gradient-to-br from-white via-accent-soft to-sunrise bg-clip-text text-4xl font-extrabold tracking-tight text-transparent md:text-5xl">
+            <div className="font-display text-6xl leading-none md:text-7xl">
               <CountUp to={s.value} run={shown} />
             </div>
-            <div className="mt-2 text-sm text-haze">{s.label}</div>
+            <div className="mt-3 text-sm text-muted">{s.label}</div>
           </div>
         ))}
       </div>
@@ -293,49 +231,64 @@ function SkillsSection() {
       id="skills"
       index="01"
       label="skills"
-      title="One model. Seven ways to use it."
+      title={
+        <>
+          One model. Seven <em className="italic text-accent">ways to use it.</em>
+        </>
+      }
       intro="A skill sets Gemini up for a kind of job: the right instructions, plus the Gemini tools that suit it. Pick one under the message box."
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="border-b border-line">
         {SKILLS.map((s, i) => (
           <article
             key={s.id}
-            onPointerMove={onSpotlightMove}
-            className="spotlight glass flex flex-col rounded-2xl p-6"
+            className="group grid gap-5 border-t border-line py-9 md:grid-cols-[84px_minmax(0,1fr)_minmax(0,1.05fr)] md:gap-10 md:py-11"
           >
-            <div className="flex min-h-[22px] items-center justify-between">
-              <span className="font-mono text-xs text-accent">{String(i + 1).padStart(2, "0")}</span>
-              <span className="flex gap-1.5">
-                {(Object.keys(s.tools) as ToolId[])
-                  .filter((t) => s.tools[t])
-                  .map((t) => (
-                    <span
-                      key={t}
-                      className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white/60"
-                    >
-                      {TOOL_LABEL[t]}
-                    </span>
-                  ))}
-              </span>
+            <div className="font-display text-5xl leading-none text-line transition-colors duration-300 group-hover:text-accent md:text-6xl">
+              {String(i + 1).padStart(2, "0")}
             </div>
-            <h3 className="mt-4 text-xl font-bold tracking-tight">{s.name}</h3>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-white/70">{s.summary}</p>
-            <div className="mt-5 rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
-              <div className="font-mono text-[10px] uppercase tracking-wider text-sunrise">Try</div>
-              <p className="mt-1 font-mono text-[12px] leading-relaxed text-white/80">{s.starter}</p>
+
+            <div>
+              <h3 className="font-display text-4xl leading-none md:text-5xl">
+                <span className="mark-hover">{s.name}</span>
+              </h3>
+              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">{s.summary}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {(Object.keys(s.tools) as ToolId[]).filter((t) => s.tools[t]).length === 0 ? (
+                  <span className="rounded-md border border-ink/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
+                    No tools needed
+                  </span>
+                ) : (
+                  (Object.keys(s.tools) as ToolId[])
+                    .filter((t) => s.tools[t])
+                    .map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-md border border-ink/25 bg-cream px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink"
+                      >
+                        {TOOL_LABEL[t]}
+                      </span>
+                    ))
+                )}
+              </div>
             </div>
+
+            <blockquote className="self-start rounded-2xl border border-dashed border-ink/30 bg-cream/70 p-5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">Try asking</div>
+              <p className="font-display mt-2 text-[1.45rem] italic leading-snug">&ldquo;{s.starter}&rdquo;</p>
+            </blockquote>
           </article>
         ))}
+      </div>
 
-        <article className="glass glass-tint glass-static flex flex-col justify-center rounded-2xl p-6 sm:col-span-2 lg:col-span-2">
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-sunrise">Straight talk</div>
-          <h3 className="mt-3 text-xl font-bold tracking-tight">Gemini is still Gemini.</h3>
-          <p className="mt-2 text-sm leading-relaxed text-white/75">
-            Skills do not turn it into a different model. They point Gemini&apos;s real tools at your task: Google
-            Search for current facts, extended thinking for hard problems, and code execution for exact numbers.
-            It can still make mistakes, so check anything that matters.
-          </p>
-        </article>
+      <div className="mt-12 rounded-3xl border border-ink bg-mark/45 p-7 md:p-10">
+        <div className="font-mono text-xs uppercase tracking-[0.2em] text-ink">Straight talk</div>
+        <h3 className="font-display mt-3 text-4xl md:text-5xl">Gemini is still Gemini.</h3>
+        <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-ink/80">
+          Skills do not turn it into a different model. They point Gemini&apos;s real tools at your task: Google Search
+          for current facts, extended thinking for hard problems, and code execution for exact numbers. It can still
+          make mistakes, so check anything that matters.
+        </p>
       </div>
     </Section>
   );
@@ -347,54 +300,52 @@ function Download() {
   return (
     <Section
       id="download"
-      index="04"
+      index="03"
       label="download"
-      title="Use it your way."
+      title={
+        <>
+          Use it <em className="italic text-accent">your way.</em>
+        </>
+      }
       intro="The web version works today in any modern browser. The Mac app adds the Option + / shortcut."
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="glass glass-tint flex flex-col rounded-2xl p-8">
-          <div className="mb-5 flex items-center justify-between">
-            <svg className="h-9 w-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="flex flex-col rounded-3xl bg-ink p-9 text-paper md:p-11">
+          <div className="flex items-start justify-between">
+            <svg className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} aria-hidden>
               <circle cx="12" cy="12" r="10" />
               <line x1="2" y1="12" x2="22" y2="12" />
               <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
             </svg>
-            <span className="rounded-full border border-emerald-400/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300">
+            <span className="rounded-full bg-mark px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink">
               Available now
             </span>
           </div>
-          <h3 className="text-xl font-bold">Web version</h3>
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-white/70">
+          <h3 className="font-display mt-10 text-5xl">Web version</h3>
+          <p className="mt-3 flex-1 text-[15px] leading-relaxed text-paper/70">
             Nothing to install. Add a free Gemini key and start in under a minute. Every skill is included.
           </p>
-          <button
-            onClick={openApp}
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-ink-950 transition-opacity hover:opacity-90"
-          >
+          <button onClick={openApp} className="btn mt-9 self-start border-paper bg-paper text-ink">
             Open the web version
             <Arrow />
           </button>
         </div>
 
-        <div className="glass glass-static flex flex-col rounded-2xl p-8">
-          <div className="mb-5 flex items-center justify-between">
-            <svg className="h-9 w-9 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <div className="flex flex-col rounded-3xl border border-dashed border-ink/40 bg-cream p-9 md:p-11">
+          <div className="flex items-start justify-between">
+            <svg className="h-10 w-10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d={APPLE_PATH} />
             </svg>
-            <span className="rounded-full border border-white/20 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white/60">
+            <span className="rounded-full border border-dashed border-ink/50 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted">
               Coming soon
             </span>
           </div>
-          <h3 className="text-xl font-bold">Mac app</h3>
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-white/70">
-            Press Option + / anywhere and the OmniDesk logo appears in the top right of your screen. Hover over it
-            to search. For Apple silicon Macs (M1 and newer).
+          <h3 className="font-display mt-10 text-5xl">Mac app</h3>
+          <p className="mt-3 flex-1 text-[15px] leading-relaxed text-muted">
+            Press Option + / anywhere and the OmniDesk logo appears in the top right of your screen. Hover over it to
+            search. For Apple silicon Macs (M1 and newer).
           </p>
-          <button
-            disabled
-            className="mt-6 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/50"
-          >
+          <button disabled className="btn btn-ghost mt-9 self-start">
             Download for Mac (soon)
           </button>
         </div>
@@ -405,19 +356,24 @@ function Download() {
 
 function Pricing() {
   return (
-    <Section id="pricing" index="05" label="pricing" title="Plans are on the way.">
-      <div className="glass glass-tint glass-static mx-auto max-w-lg rounded-2xl p-10 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white/70">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sunrise" />
+    <Section
+      id="pricing"
+      index="04"
+      label="pricing"
+      title={
+        <>
+          Plans are <em className="italic text-accent">on the way.</em>
+        </>
+      }
+    >
+      <div className="mx-auto max-w-xl rounded-3xl border border-line bg-cream p-10 text-center md:p-12">
+        <div className="inline-block -rotate-3 rounded-md border-2 border-accent px-4 py-1.5 font-mono text-sm font-semibold uppercase tracking-[0.2em] text-accent">
           Coming soon
         </div>
-        <p className="mt-6 text-sm leading-relaxed text-white/75">
+        <p className="mx-auto mt-7 max-w-sm text-[15px] leading-relaxed text-muted">
           We are still shaping the right plans. For now, the web version is free to use with your own Gemini key.
         </p>
-        <button
-          onClick={openApp}
-          className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-deep to-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
-        >
+        <button onClick={openApp} className="btn btn-solid mt-8">
           Try it free
           <Arrow />
         </button>
@@ -451,17 +407,31 @@ const FAQS = [
 
 function Faq() {
   return (
-    <Section id="faq" index="06" label="questions" title="Good to know.">
-      <div className="mx-auto max-w-3xl space-y-3">
+    <Section
+      id="faq"
+      index="05"
+      label="questions"
+      title={
+        <>
+          Good <em className="italic text-accent">to know.</em>
+        </>
+      }
+    >
+      <div className="border-b border-line">
         {FAQS.map((f) => (
-          <details key={f.q} className="glass glass-static group rounded-2xl px-6 py-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold">
-              {f.q}
-              <span className="font-mono text-lg text-accent transition-transform group-open:rotate-45" aria-hidden>
-                +
+          <details key={f.q} className="group border-t border-line py-6">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6">
+              <span className="font-display text-3xl leading-tight md:text-4xl">{f.q}</span>
+              <span
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink/30 transition-all group-open:rotate-45 group-open:border-ink group-open:bg-ink group-open:text-paper"
+                aria-hidden
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
               </span>
             </summary>
-            <p className="mt-3 text-sm leading-relaxed text-white/70">{f.a}</p>
+            <p className="mt-4 max-w-3xl text-[15px] leading-relaxed text-muted">{f.a}</p>
           </details>
         ))}
       </div>
@@ -471,15 +441,19 @@ function Faq() {
 
 function Footer() {
   return (
-    <footer className="relative z-10 border-t border-white/5 px-6 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 font-mono text-xs text-haze sm:flex-row">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded bg-white text-ink-950">
-            <Logo className="h-4 w-4" />
-          </span>
-          <span className="uppercase tracking-[0.18em]">OmniDesk</span>
+    <footer className="relative z-10 overflow-hidden border-t border-line bg-cream px-6 pb-10 pt-16">
+      <div className="mx-auto max-w-6xl">
+        <div className="font-display text-[clamp(4.5rem,17vw,14rem)] leading-[0.85] tracking-[-0.03em]">
+          OmniDesk<span className="text-accent">.</span>
         </div>
-        <span>{new Date().getFullYear()} OmniDesk. Runs on Google Gemini with your own key.</span>
+        <div className="mt-10 flex flex-col justify-between gap-3 border-t border-line pt-6 font-mono text-xs text-muted sm:flex-row">
+          <span>{new Date().getFullYear()} OmniDesk. Runs on Google Gemini with your own key.</span>
+          <span className="flex gap-5">
+            <a href="#skills" className="hover:text-ink">Skills</a>
+            <a href="#tutorial" className="hover:text-ink">Tutorial</a>
+            <a href="#/app" className="hover:text-ink">Web version</a>
+          </span>
+        </div>
       </div>
     </footer>
   );

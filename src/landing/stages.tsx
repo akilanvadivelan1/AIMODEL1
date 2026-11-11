@@ -17,8 +17,8 @@ export function Logo({ className = "h-5 w-5" }: { className?: string }) {
 
 function Frame({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="glass glass-static overflow-hidden rounded-2xl">
-      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5">
+    <div className="overflow-hidden rounded-2xl border border-ink/80 bg-[#121212] shadow-[0_32px_60px_-28px_rgba(22,19,14,0.65)]">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-[#1a1a1a] px-4 py-2.5">
         <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
@@ -38,7 +38,7 @@ function Cursor({ x, y, click }: { x: string; y: string; click?: boolean }) {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="black" strokeWidth="1.2">
         <path d="M4 3l16 7-7 2-2 7z" />
       </svg>
-      {click && <span className="ripple absolute -left-3.5 -top-3.5 h-8 w-8 rounded-full border-2 border-accent" />}
+      {click && <span className="ripple absolute -left-3.5 -top-3.5 h-8 w-8 rounded-full border-2 border-[#ff7a45]" />}
     </div>
   );
 }
@@ -105,7 +105,7 @@ export function KeyStage() {
               <Check /> {p >= 6 ? "Copied" : "Copy"}
             </span>
           </div>
-          <p className="mt-3 text-[11px] text-sunrise">Keep it private. Anyone with this key can use your quota.</p>
+          <p className="mt-3 text-[11px] text-[#ff9b6a]">Keep it private. Anyone with this key can use your quota.</p>
         </div>
       )}
 
@@ -279,9 +279,9 @@ export function DesktopDemo({ height = "h-[340px]" }: { height?: string }) {
   const typed = useTyped("Summarize this contract clause", p >= 3, 42);
 
   return (
-    <div className={`relative ${height} overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1230] via-[#0f1226] to-[#1c1410]`}>
-      <div className="absolute -left-10 top-16 h-48 w-48 rounded-full bg-accent-deep/30 blur-3xl" />
-      <div className="absolute bottom-0 right-10 h-40 w-40 rounded-full bg-sunrise/15 blur-3xl" />
+    <div className={`relative ${height} overflow-hidden rounded-2xl border border-ink/80 bg-gradient-to-br from-[#1f2d2b] via-[#151d26] to-[#2c1d14] shadow-[0_32px_60px_-28px_rgba(22,19,14,0.65)]`}>
+      <div className="absolute -left-10 top-16 h-48 w-48 rounded-full bg-accent/30 blur-3xl" />
+      <div className="absolute bottom-0 right-10 h-40 w-40 rounded-full bg-mark/15 blur-3xl" />
 
       <div className="relative flex h-6 items-center gap-4 bg-black/30 px-3 font-mono text-[9px] text-white/60 backdrop-blur">
         <span className="font-bold text-white/80">OmniDesk</span>
