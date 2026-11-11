@@ -14,6 +14,8 @@ export interface AskOptions {
   history: { role: "user" | "assistant"; content: string }[];
   prefs: Prefs;
   attachments?: Attachment[];
+  /** Extra rules added to the system prompt, such as how to treat shared tabs. */
+  extraSystem?: string;
   signal?: AbortSignal;
 }
 
@@ -27,7 +29,7 @@ export function ask(opts: AskOptions): Promise<GenerateResult> {
     day: "numeric",
   });
 
-  const system = [BASE_PROMPT, `Today's date is ${today}.`, skill.prompt, styleInstruction()]
+  const system = [BASE_PROMPT, `Today's date is ${today}.`, skill.prompt, opts.extraSystem, styleInstruction()]
     .filter(Boolean)
     .join("\n\n");
 

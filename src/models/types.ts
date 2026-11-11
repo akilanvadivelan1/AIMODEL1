@@ -23,6 +23,8 @@ export interface ChatMessage {
   content: string;
   /** Files attached to a user message. */
   attachments?: Attachment[];
+  /** Browser tabs the user shared with this question (Mac app). */
+  tabs?: { title: string; url: string }[];
   sources?: Source[];
   /** Google's search suggestions (HTML), shown with answers that used Search. */
   searchHtml?: string;

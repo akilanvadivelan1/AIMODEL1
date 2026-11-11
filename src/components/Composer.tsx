@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { Attachment } from "../models/types";
 import { getSkill, MODELS, type Prefs, type SkillId, type ToolId } from "../models/skills";
 import { SkillBar } from "./SkillBar";
+import { TabPicker } from "./TabPicker";
+import { hostOf, tabKey, tabsSupported, type BrowserTab } from "../lib/tabs";
 
 interface Props {
   prefs: Prefs;
   onSkill: (id: SkillId) => void;
   onToggleTool: (tool: ToolId) => void;
-  onSend: (text: string, attachments: Attachment[]) => void;
+  onSend: (text: string, attachments: Attachment[], tabs: BrowserTab[]) => void;
   disabled?: boolean;
   /** Put this text in the box (used when the user picks a starter). */
   draft?: { text: string; nonce: number } | null;
@@ -39,6 +41,8 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fileError, setFileError] = useState("");
+  const [tabs, setTabs] = useState<BrowserTab[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -57,10 +61,11 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
 
   function submit() {
     const t = text.trim();
-    if ((!t && attachments.length === 0) || disabled) return;
-    onSend(t, attachments);
+    if ((!t && attachments.length === 0 && tabs.length === 0) || disabled) return;
+    onSend(t, attachments, tabs);
     setText("");
     setAttachments([]);
+    setTabs([]);
     setFileError("");
     if (ref.current) ref.current.style.height = "auto";
   }
@@ -141,6 +146,27 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
               ))}
             </div>
           )}
+          {tabs.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5 px-1">
+              {tabs.map((t, i) => (
+                <span
+                  key={tabKey(t)}
+                  title={t.url}
+                  className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-ink bg-[#ece5d6] py-1 pl-2.5 pr-1.5 font-mono text-[10px] text-[#2e2a23]"
+                >
+                  <span className="text-[#756d5f]">{i + 1}</span>
+                  <span className="truncate">{t.title || hostOf(t.url)}</span>
+                  <button
+                    onClick={() => setTabs((prev) => prev.filter((x) => tabKey(x) !== tabKey(t)))}
+                    className="text-[#756d5f] hover:text-ink"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           {fileError && <div className="mb-2 px-1 font-mono text-[10px] text-[#b3321a]">{fileError}</div>}
 
           <textarea
@@ -186,6 +212,22 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
               </button>
+              {tabsSupported && (
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  disabled={disabled}
+                  title="Ask about tabs you have open in your browser"
+                  aria-pressed={tabs.length > 0}
+                  className={[
+                    "whitespace-nowrap rounded border px-2 py-0.5 font-bold transition-all disabled:opacity-40",
+                    tabs.length > 0
+                      ? "border-ink bg-ink text-cream"
+                      : "border-[#dcd2bf] bg-transparent text-[#756d5f] hover:border-[#756d5f] hover:text-ink",
+                  ].join(" ")}
+                >
+                  Tabs{tabs.length > 0 ? ` (${tabs.length})` : ""}
+                </button>
+              )}
               <div className="mx-0.5 h-3 w-px bg-[#dcd2bf]" />
               {TOOLS.map((t) => {
                 const on = prefs[t.id];
@@ -210,7 +252,7 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
 
             <button
               onClick={submit}
-              disabled={disabled || (!text.trim() && attachments.length === 0)}
+              disabled={disabled || (!text.trim() && attachments.length === 0 && tabs.length === 0)}
               aria-label="Send"
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-cream shadow-md transition-all hover:bg-[#2e2a23] active:scale-95 disabled:pointer-events-none disabled:opacity-30"
             >
@@ -225,6 +267,7 @@ export function Composer({ prefs, onSkill, onToggleTool, onSend, disabled, draft
           {skill.name} on {modelName}. Runs on Google Gemini with your own key.
         </p>
       </div>
+      <TabPicker open={pickerOpen} selected={tabs} onClose={() => setPickerOpen(false)} onDone={setTabs} />
     </div>
   );
 }

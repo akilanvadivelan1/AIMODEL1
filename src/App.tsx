@@ -25,6 +25,8 @@ import {
 } from "./lib/backend";
 import { openExternal, SITE_URL } from "./lib/external";
 import { pullSettings, resetSync, schedulePush } from "./lib/sync";
+import { readTab, type BrowserTab } from "./lib/tabs";
+import { buildTabPrompt, linkCitations, TAB_SYSTEM_PROMPT, type TabText } from "./models/tabbrain";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
 /** How many earlier messages are sent along with a question. */
@@ -184,7 +186,7 @@ export default function App() {
     setDraft({ text: getSkill(id).starter, nonce: Date.now() });
   }
 
-  async function handleSend(text: string, attachments: Attachment[] = []) {
+  async function handleSend(text: string, attachments: Attachment[] = [], pickedTabs: BrowserTab[] = []) {
     if (busyMsgId) return;
 
     let convId = activeId;
@@ -195,6 +197,7 @@ export default function App() {
       role: "user",
       content: text,
       attachments: attachments.length ? attachments : undefined,
+      tabs: pickedTabs.length ? pickedTabs.map((t) => ({ title: t.title, url: t.url })) : undefined,
       createdAt: Date.now(),
     };
     const assistantMsg: ChatMessage = { id: uid(), role: "assistant", content: "", createdAt: Date.now() };
@@ -224,9 +227,36 @@ export default function App() {
       }));
 
     try {
-      const res = await ask({ prompt: text, history, prefs: used, attachments, signal: controller.signal });
+      let prompt = text;
+      let extraSystem: string | undefined;
+      let tabTexts: TabText[] = [];
+
+      if (pickedTabs.length > 0) {
+        // Read only the tabs the user picked, a few at a time so the browser is not flooded.
+        tabTexts = await Promise.all(
+          pickedTabs.map(async (t): Promise<TabText> => {
+            try {
+              return { title: t.title, url: t.url, text: await readTab(t) };
+            } catch (e) {
+              return { title: t.title, url: t.url, text: "", error: (e as Error).message };
+            }
+          })
+        );
+        if (controller.signal.aborted) throw new DOMException("Stopped", "AbortError");
+        if (tabTexts.every((t) => !t.text)) {
+          // Nothing could be read, so asking Gemini would only produce a made-up answer.
+          const why = [...new Set(tabTexts.map((t) => t.error ?? "No text found."))].join("\n");
+          finish({ content: `I could not read any of those tabs.\n\n${why}`, error: true });
+          return;
+        }
+        prompt = buildTabPrompt(text, tabTexts);
+        extraSystem = TAB_SYSTEM_PROMPT;
+      }
+
+      const res = await ask({ prompt, history, prefs: used, attachments, extraSystem, signal: controller.signal });
+      const answer = tabTexts.length > 0 ? linkCitations(res.text, tabTexts) : res.text;
       finish({
-        content: res.text,
+        content: answer,
         sources: res.sources.length ? res.sources : undefined,
         searchHtml: res.searchEntryPoint,
         truncated: res.truncated || undefined,

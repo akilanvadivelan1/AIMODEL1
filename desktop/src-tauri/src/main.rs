@@ -1,7 +1,12 @@
 // Prevents an extra console window on Windows in release. Harmless on macOS.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod tabs;
+
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
+use serde::Serialize;
 
 use tauri::{
     AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow,
@@ -82,6 +87,99 @@ fn open_external(url: String) {
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// TabBrain: read the tabs open in the user's browsers (macOS only).
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserTab {
+    browser: String,
+    window_id: i64,
+    tab_index: u32,
+    title: String,
+    url: String,
+    /// False for settings pages, new tab pages and other things that have no readable text.
+    readable: bool,
+}
+
+#[derive(Serialize)]
+struct TabList {
+    tabs: Vec<BrowserTab>,
+    /// One plain-language message per browser that could not be listed.
+    errors: Vec<String>,
+}
+
+/// List the open tabs of every supported browser that is running.
+#[tauri::command]
+async fn list_browser_tabs() -> Result<TabList, String> {
+    if !cfg!(target_os = "macos") {
+        return Err("Reading browser tabs works in the Mac app.".into());
+    }
+    tauri::async_runtime::spawn_blocking(|| -> Result<TabList, String> {
+        let mut list = TabList { tabs: vec![], errors: vec![] };
+        for name in tabs::browser_names() {
+            if !tabs::is_running(name) {
+                continue;
+            }
+            let Some(kind) = tabs::kind_of(name) else { continue };
+            match tabs::run_osascript(&tabs::list_script(name, kind), name, Duration::from_secs(8)) {
+                Ok(out) => {
+                    for t in tabs::parse_tabs(&out) {
+                        list.tabs.push(BrowserTab {
+                            browser: name.to_string(),
+                            window_id: t.window_id,
+                            tab_index: t.tab_index,
+                            readable: tabs::is_readable_url(&t.url),
+                            title: t.title,
+                            url: t.url,
+                        });
+                    }
+                }
+                Err(msg) => list.errors.push(format!("{name}: {msg}")),
+            }
+        }
+        Ok(list)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Read the text of one tab. Only tabs the user picked are ever read.
+#[tauri::command]
+async fn read_browser_tab(browser: String, window_id: i64, tab_index: u32) -> Result<String, String> {
+    let Some(kind) = tabs::kind_of(&browser) else {
+        return Err("That browser is not supported.".into());
+    };
+    tauri::async_runtime::spawn_blocking(move || -> Result<String, String> {
+        let script = tabs::read_script(&browser, kind, window_id, tab_index);
+        let raw = tabs::run_osascript(&script, &browser, Duration::from_secs(10))?;
+        let text = tabs::clean_text(&raw, 12_000);
+        if text.is_empty() {
+            Err("That tab has no readable text (it may still be loading).".to_string())
+        } else {
+            Ok(text)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Bring a tab to the front.
+#[tauri::command]
+async fn focus_browser_tab(browser: String, window_id: i64, tab_index: u32) -> Result<(), String> {
+    let Some(kind) = tabs::kind_of(&browser) else {
+        return Err("That browser is not supported.".into());
+    };
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let script = tabs::focus_script(&browser, kind, window_id, tab_index);
+        tabs::run_osascript(&script, &browser, Duration::from_secs(5)).map(|_| ())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Bring the full OmniDesk window to the front.
 #[tauri::command]
 fn open_main_window(app: AppHandle) {
@@ -145,7 +243,10 @@ fn main() {
             hide_widget,
             set_widget_sticky,
             open_main_window,
-            open_external
+            open_external,
+            list_browser_tabs,
+            read_browser_tab,
+            focus_browser_tab
         ])
         .setup(move |app| {
             // The small, borderless, see-through window pinned to the top right.

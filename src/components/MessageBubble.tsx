@@ -42,6 +42,20 @@ export function MessageBubble({
               )}
             </div>
           )}
+          {message.tabs && message.tabs.length > 0 && (
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {message.tabs.map((t, i) => (
+                <span
+                  key={i}
+                  title={t.url}
+                  className="flex max-w-[220px] items-center gap-1.5 rounded-full border border-[#dcd2bf] bg-[#ece5d6] px-2.5 py-1 font-mono text-[10px] text-[#2e2a23]"
+                >
+                  <span className="text-[#756d5f]">{i + 1}</span>
+                  <span className="truncate">{t.title || t.url}</span>
+                </span>
+              ))}
+            </div>
+          )}
           {message.content && (
             <div className="whitespace-pre-wrap rounded-2xl border border-[#dcd2bf] bg-[#fbf8f1] px-4 py-3 text-[13px] leading-relaxed text-ink shadow-lg sm:text-sm">
               {message.content}
