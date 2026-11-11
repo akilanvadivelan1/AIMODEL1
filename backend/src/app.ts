@@ -46,10 +46,15 @@ const MAX_CODES_PER_HOUR = 5;
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
 
 const settingsSchema = z.object({
+  // The assistant preferences: which Gemini model, which skill, and which tools are on.
+  // (The field is still called "selection" so existing databases keep working.)
   selection: z
     .object({
-      kind: z.enum(["quad", "single"]),
-      variantId: z.string().max(64).optional(),
+      model: z.string().max(64).regex(/^[a-z0-9.\-]+$/),
+      skill: z.string().max(32).regex(/^[a-z]+$/),
+      search: z.boolean(),
+      think: z.boolean(),
+      code: z.boolean(),
     })
     .nullable()
     .optional(),

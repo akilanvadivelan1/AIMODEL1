@@ -1,59 +1,56 @@
-# Multi-Model Chat
+# OmniDesk
 
-A personal chatbot UI that combines four AI models, each routed to its strengths:
+One AI, seven skills. OmniDesk runs on Google Gemini with your own free key, and sets Gemini up for different jobs: research with sources, careful thinking, exact math, writing in your voice, code, and build plans.
 
-| Model | Vendor | Best at |
-|-------|--------|---------|
-| **Claude** | Anthropic | Multi-file coding, nuanced instructions, long-form writing |
-| **Gemini** | Google | Multimodal input, huge context, search-grounded answers |
-| **ChatGPT** | OpenAI | Tool/plugin ecosystem, voice/realtime, image generation |
-| **Kiro** | AWS | Spec-driven builds, agentic repo work, steering & hooks |
+- Website and web app: https://akilanvadivelan1.github.io/AIMODEL1/
+- Mac app: see `desktop/README.md`
+- Accounts server: see `backend/README.md`
 
-> **Status:** UI with **mocked responses**. Real API calls are not wired in yet.
+## The skills
 
-## Features
+A skill is a set of instructions plus the Gemini tools that suit the job. It does not change the model. It points Gemini's real abilities at your task.
 
-- Pick a model per message (manual routing) with a color-coded picker.
-- Each assistant reply is tagged with a model badge (hover for that model's strengths).
-- Word-by-word streaming with a Stop button.
-- Conversation sidebar: new / select / delete, persisted to `localStorage`.
+| Skill | What it does | Gemini tools |
+| --- | --- | --- |
+| Chat | Everyday questions | none |
+| Research | Searches the web and shows its sources | Search, Think |
+| Reason | Works through hard problems before answering | Think |
+| Write | Drafts and edits, and matches your writing style | none |
+| Code | Writes complete code and explains tradeoffs | Think |
+| Math | Writes and runs Python for exact answers | Run code, Think |
+| Spec | Turns an idea into requirements, a design, and tasks | Think |
 
-## Run locally
+You can switch Search, Think, and Run code on or off for any skill. Search and Run code cannot be on together, because Gemini does not allow that.
+
+Also built in: attach or paste images and PDFs, teach it your writing style from a sample, and (in the Mac app) press Option + / to get a small search bar in the top right of your screen.
+
+## Run it on your computer
 
 ```bash
 npm install
-npm run dev
+npm run build
 ```
 
-Open http://localhost:5173.
+Then open the web app, click Connect, and paste a free key from https://aistudio.google.com/app/apikey.
 
-```bash
-npm run build    # type-check + production build
-npm run preview  # preview the production build
-```
-
-## Architecture
-
-All model logic is isolated behind a single function so going live never touches the UI:
+## How it is organized
 
 ```
 src/
   models/
-    types.ts       # ChatMessage, Conversation, ModelId
-    registry.ts    # the 4 models + strengths & accent colors
-    provider.ts    # sendMessage() — SINGLE SWAP POINT (mock now, real APIs later)
-  components/
-    Sidebar.tsx
-    Composer.tsx
-    ModelPicker.tsx
-    ModelBadge.tsx
-    MessageBubble.tsx
-  App.tsx          # state, streaming, persistence
+    skills.ts        the seven skills, the Gemini models, and the preference types
+    gemini.ts        the Gemini client: tools, thinking, retries, readable errors
+    ask.ts           builds the instructions for a skill and calls Gemini
+    prefs.ts         saving and checking the chosen skill, model, and tools
+    styleProfile.ts  learns your writing style from a sample
+  components/        the app screens (chat, composer, key and style windows)
+  landing/           the website: sections, tutorial, and the animated mock screens
+  widget/            the Mac quick-search widget
+  lib/               accounts, syncing, and opening links
+desktop/             the Mac app (Tauri)
+backend/             the accounts server (Node and SQLite)
 ```
 
-To go live, replace the body of `sendMessage` in `src/models/provider.ts` with real API calls
-(ideally via a small backend so API keys stay off the client). The UI stays identical.
+## Your key and your data
 
-## Stack
-
-React 18 · TypeScript · Tailwind CSS · Vite
+Your key is saved on your device. Your questions go straight from your device to Google. Accounts are optional and, when switched on, sync your key (encrypted), your skill and model choices, and your writing style. Chats stay on your device.

@@ -1,6 +1,6 @@
 import { api, backendEnabled, getToken, type SyncedSettings } from "./backend";
 import { getApiKey, setApiKey } from "../models/apiKey";
-import { loadSelection, saveSelection } from "../models/prefs";
+import { loadPrefs, normalizePrefs, savePrefs } from "../models/prefs";
 import { getStyleProfile, importStyleProfile } from "../models/styleProfile";
 
 /**
@@ -24,7 +24,7 @@ async function pushNow(): Promise<void> {
   try {
     await api.putSettings({
       apiKey: getApiKey() || null,
-      selection: loadSelection(),
+      selection: loadPrefs(),
       styleProfile: getStyleProfile(),
     });
   } catch {
@@ -47,7 +47,8 @@ export async function pullSettings(): Promise<SyncedSettings> {
   const server = await api.getSettings();
 
   if (server.apiKey) setApiKey(server.apiKey);
-  if (server.selection) saveSelection(server.selection);
+  const prefs = normalizePrefs(server.selection);
+  if (prefs) savePrefs(prefs);
   if (server.styleProfile) importStyleProfile(server.styleProfile);
 
   ready = true;

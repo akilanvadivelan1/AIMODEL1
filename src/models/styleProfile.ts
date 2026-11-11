@@ -1,5 +1,5 @@
 import { getApiKey } from "./apiKey";
-import { askGemini } from "./gemini";
+import { generate } from "./gemini";
 
 const SAMPLE_KEY = "omnidesk.style.sample.v1";
 const PROFILE_KEY = "omnidesk.style.profile.v1";
@@ -68,13 +68,17 @@ export async function analyzeAndSaveStyle(
   const instruction =
     "Analyze the following writing sample and produce a concise style guide (6 to 10 short bullet points) that another writer could follow to imitate this exact voice. Cover: tone and formality, sentence length and rhythm, vocabulary level, greetings and sign-offs, punctuation habits, use of contractions, and any recurring quirks. Output only the bullet points, no preamble.";
 
-  const description = await askGemini(
-    `${instruction}\n\n--- SAMPLE ---\n${trimmed}`,
-    [],
-    "gemini-2.5-flash",
-    "single",
-    signal
-  );
+  // Throws a GeminiError with a readable message if Google refuses.
+  const result = await generate({
+    model: "gemini-2.5-flash",
+    system: "You are a careful writing analyst.",
+    history: [],
+    prompt: `${instruction}\n\n--- SAMPLE ---\n${trimmed}`,
+    think: false,
+    temperature: 0.3,
+    signal,
+  });
+  const description = result.text;
 
   const profile: StyleProfile = {
     sample: trimmed,

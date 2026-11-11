@@ -4,7 +4,7 @@ A small server that gives OmniDesk accounts. It handles:
 
 - Signing in with an emailed 6 digit code
 - Signing in with Google
-- Syncing three things between devices: the user's Gemini key (stored encrypted), the AI they picked, and their writing style
+- Syncing three things between devices: the user's Gemini key (stored encrypted), the skill, model, and tools they picked, and their writing style
 - Deleting an account and everything stored for it
 
 Chats are not stored here. They stay on the user's device.

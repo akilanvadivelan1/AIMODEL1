@@ -62,7 +62,7 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
             }}
             className="inline-flex items-center gap-1.5 text-[#cccccc] underline decoration-[#444444] underline-offset-2 hover:text-white"
           >
-            Get a free key at aistudio.google.com ↗
+            Get a free key at aistudio.google.com
           </a>
 
           <input

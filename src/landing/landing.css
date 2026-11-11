@@ -1,0 +1,302 @@
+/* OmniDesk website styles. Built from the effects in the portfolio site. */
+
+@font-face {
+  font-family: "Departure Mono";
+  src: url("../assets/fonts/DepartureMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+html.site-view {
+  scroll-behavior: smooth;
+}
+
+.site {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+.site .font-mono {
+  font-family: "Departure Mono", ui-monospace, monospace;
+}
+.site section[id] {
+  scroll-margin-top: 64px;
+}
+.site ::selection {
+  background: rgba(155, 123, 234, 0.35);
+}
+.site .text-balance {
+  text-wrap: balance;
+}
+
+/* Subtle grid backdrop */
+.site .grid-backdrop {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Faint film grain over the page */
+.site .noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.site a:focus-visible,
+.site button:focus-visible,
+.site summary:focus-visible {
+  outline: 2px solid #b79df2;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Slow drifting aurora blobs */
+.site .aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.site .aurora span {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(110px);
+  will-change: transform;
+}
+.site .aurora .a1 {
+  top: -12%;
+  left: -8%;
+  width: 46vw;
+  height: 46vw;
+  background: rgba(107, 72, 214, 0.28);
+  animation: drift-a 26s ease-in-out infinite;
+}
+.site .aurora .a2 {
+  bottom: -18%;
+  right: -10%;
+  width: 40vw;
+  height: 40vw;
+  background: rgba(155, 123, 234, 0.2);
+  animation: drift-b 32s ease-in-out infinite;
+}
+.site .aurora .a3 {
+  top: 38%;
+  right: 18%;
+  width: 18vw;
+  height: 18vw;
+  background: rgba(255, 154, 77, 0.1);
+  animation: drift-a 38s ease-in-out infinite reverse;
+}
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6vw, 5vh, 0) scale(1.12); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-7vw, -4vh, 0) scale(1.08); }
+}
+
+/* Headline words blur in one at a time */
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(10px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.site .word-reveal {
+  display: inline-block;
+  opacity: 0;
+  animation: word-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Typing caret */
+.site .caret {
+  display: inline-block;
+  width: 0.6ch;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: #ff9a4d;
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret {
+  50% { opacity: 0; }
+}
+
+/* Ribbon */
+.site .marquee {
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+.site .marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 50s linear infinite;
+}
+.site .marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* Cards that glow where the pointer is */
+.site .spotlight {
+  position: relative;
+}
+.site .spotlight::before,
+.site .spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.site .spotlight::before {
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(155, 123, 234, 0.14),
+    transparent 60%
+  );
+}
+.site .spotlight::after {
+  padding: 1px;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 154, 77, 0.6),
+    rgba(155, 123, 234, 0.6) 45%,
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.site .spotlight:hover::before,
+.site .spotlight:hover::after,
+.site .spotlight:focus-visible::before,
+.site .spotlight:focus-visible::after {
+  opacity: 1;
+}
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.site .float-y {
+  animation: float-y 6s ease-in-out infinite;
+}
+
+@keyframes hint {
+  0% { transform: translateY(0); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+.site .scroll-hint-dot {
+  animation: hint 1.8s ease-in-out infinite;
+}
+
+/* Liquid glass */
+.site .glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03) 45%, rgba(155, 123, 234, 0.06));
+  -webkit-backdrop-filter: blur(18px) saturate(1.7) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(1.7) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 28px rgba(255, 255, 255, 0.035),
+    0 12px 40px -14px rgba(0, 0, 0, 0.65);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+.site .glass:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.site .glass-static:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.site .glass-tint {
+  background: linear-gradient(135deg, rgba(155, 123, 234, 0.18), rgba(255, 255, 255, 0.03) 50%, rgba(255, 154, 77, 0.06));
+}
+.site .glass-bar {
+  background: rgba(12, 9, 22, 0.42);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7);
+  backdrop-filter: blur(20px) saturate(1.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05), 0 10px 36px -14px rgba(0, 0, 0, 0.6);
+}
+.site .glass-chip {
+  backdrop-filter: blur(12px) saturate(1.7) brightness(1.1) url(#liquid);
+}
+.site .glass-band {
+  background: rgba(255, 255, 255, 0.025);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  backdrop-filter: blur(14px) saturate(1.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Tutorial pieces */
+@keyframes step-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.site .step-fill {
+  transform-origin: left;
+  animation-name: step-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.site .pop-in {
+  animation: pop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes ripple {
+  from { opacity: 0.7; transform: scale(0.4); }
+  to { opacity: 0; transform: scale(2.2); }
+}
+.site .ripple {
+  animation: ripple 0.8s ease-out both;
+}
+@keyframes dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
+}
+.site .dots::after {
+  content: "...";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: dots 1.2s steps(1, end) infinite;
+}
+
+@media (max-width: 640px) {
+  .site .glass {
+    -webkit-backdrop-filter: blur(10px) saturate(1.5);
+    backdrop-filter: blur(10px) saturate(1.5);
+  }
+}
+
+/* Respect the system reduced-motion setting */
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .site .marquee-track {
+    animation: none;
+  }
+}

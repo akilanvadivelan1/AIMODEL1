@@ -23,3 +23,4 @@ backend/data-live.log
 # Local tool output
 .kiro/artifacts/
 .kiro/settings/
+*.tmp.mts

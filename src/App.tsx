@@ -1,26 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  AssistantTurn,
-  Attachment,
-  ChatMessage,
-  Conversation,
-  StageOutput,
-  ViewMode,
-} from "./models/types";
-import { orchestrate } from "./models/orchestrator";
+import type { Attachment, ChatMessage, Conversation } from "./models/types";
+import { ask } from "./models/ask";
+import { GeminiError } from "./models/gemini";
+import { getSkill, type Prefs, type SkillId, type ToolId } from "./models/skills";
+import { loadPrefs, normalizePrefs, savePrefs, withSkill, withToolToggled } from "./models/prefs";
+import { getApiKey } from "./models/apiKey";
+import { getStyleProfile } from "./models/styleProfile";
 import { Sidebar } from "./components/Sidebar";
-import { ModelSwitcher, type Selection } from "./components/ModelSwitcher";
-import { ViewToggle } from "./components/ViewToggle";
-import { StrengthsModal } from "./components/StrengthsModal";
+import { ModelPicker } from "./components/ModelPicker";
 import { MessageBubble } from "./components/MessageBubble";
-import { Composer, type CapabilityKey } from "./components/Composer";
+import { Composer } from "./components/Composer";
 import { Hero } from "./components/Hero";
 import { ApiKeyModal } from "./components/ApiKeyModal";
 import { StyleModal } from "./components/StyleModal";
 import { AccountModal } from "./components/AccountModal";
-import { getApiKey } from "./models/apiKey";
-import { loadSelection, saveSelection } from "./models/prefs";
-import { getStyleProfile } from "./models/styleProfile";
 import {
   api,
   backendEnabled,
@@ -34,15 +27,30 @@ import { openExternal, SITE_URL } from "./lib/external";
 import { pullSettings, resetSync, schedulePush } from "./lib/sync";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
+/** How many earlier messages are sent along with a question. */
+const HISTORY_LIMIT = 20;
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+/** Reads saved chats, including ones saved by older versions of the app. */
 function load(): Conversation[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Conversation[]) : [];
+    if (!raw) return [];
+    const list = JSON.parse(raw) as Array<Record<string, any>>;
+    return list.map((c) => ({
+      ...(c as unknown as Conversation),
+      messages: (c.messages ?? []).map((m: Record<string, any>) => {
+        // Older versions kept the answer inside a "turn" object.
+        if (m.role === "assistant" && m.turn) {
+          const { turn, ...rest } = m;
+          return { ...rest, content: m.content || turn.unified || "" } as ChatMessage;
+        }
+        return m as ChatMessage;
+      }),
+    }));
   } catch {
     return [];
   }
@@ -51,26 +59,17 @@ function load(): Conversation[] {
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(load);
   const [activeId, setActiveId] = useState<string | null>(() => load()[0]?.id ?? null);
-  const [selection, setSelection] = useState<Selection>(loadSelection);
-  const [viewMode, setViewMode] = useState<ViewMode>("unified");
+  const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
+  const [draft, setDraft] = useState<{ text: string; nonce: number } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [matrixOpen, setMatrixOpen] = useState(false);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
   // The landing page's Sign in link opens the app with the sign-in window ready.
-  const [accountOpen, setAccountOpen] = useState(
-    () => window.location.hash === "#/app/signin"
-  );
+  const [accountOpen, setAccountOpen] = useState(() => window.location.hash === "#/app/signin");
   const [user, setUser] = useState<BackendUser | null>(null);
   const [hasStyle, setHasStyle] = useState(() => !!getStyleProfile());
   const [hasKey, setHasKey] = useState(() => !!getApiKey());
   const [busyMsgId, setBusyMsgId] = useState<string | null>(null);
-  const [capabilities, setCapabilities] = useState<Record<CapabilityKey, boolean>>({
-    ears: true,
-    grounding: true,
-    thinking: true,
-    sandbox: true,
-  });
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -80,24 +79,20 @@ export default function App() {
     [conversations, activeId]
   );
 
+  // Save chats. Attachment contents are large, so only their names are kept.
   useEffect(() => {
-    // Don't persist large base64 attachment blobs to localStorage (quota).
-    // Keep only lightweight metadata so the chip/label still shows on reload.
     const slim = conversations.map((c) => ({
       ...c,
       messages: c.messages.map((m) =>
         m.attachments
-          ? {
-              ...m,
-              attachments: m.attachments.map((a) => ({ ...a, data: "" })),
-            }
+          ? { ...m, attachments: m.attachments.map((a) => ({ ...a, data: "" })) }
           : m
       ),
     }));
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
     } catch {
-      /* quota exceeded: skip persisting this cycle */
+      /* storage is full: skip saving this time */
     }
   }, [conversations]);
 
@@ -108,11 +103,11 @@ export default function App() {
     }
   }, []);
 
-  // Remember the chosen AI, and sync it to the account if signed in.
+  // Remember the skill, model and tools, and sync them to the account if signed in.
   useEffect(() => {
-    saveSelection(selection);
+    savePrefs(prefs);
     schedulePush();
-  }, [selection]);
+  }, [prefs]);
 
   // If a session was saved from last time, restore it and pull the settings.
   useEffect(() => {
@@ -139,7 +134,8 @@ export default function App() {
 
   async function applyServerSettings() {
     const server = await pullSettings();
-    if (server.selection) setSelection(server.selection);
+    const fromServer = normalizePrefs(server.selection);
+    if (fromServer) setPrefs(fromServer);
     setHasKey(!!getApiKey());
     setHasStyle(!!getStyleProfile());
   }
@@ -153,25 +149,21 @@ export default function App() {
     }
   }
 
-  function handleSignedOut() {
-    setUser(null);
-  }
-
+  // Follow the conversation as it grows. The empty screen stays at the top.
   useEffect(() => {
+    if (!active || active.messages.length === 0) {
+      scrollRef.current?.scrollTo({ top: 0 });
+      return;
+    }
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [active?.messages, busyMsgId]);
+  }, [active?.messages, active?.id, busyMsgId]);
 
   function patch(id: string, fn: (c: Conversation) => Conversation) {
     setConversations((prev) => prev.map((c) => (c.id === id ? fn(c) : c)));
   }
 
   function newConversation(): string {
-    const conv: Conversation = {
-      id: uid(),
-      title: "New session",
-      messages: [],
-      createdAt: Date.now(),
-    };
+    const conv: Conversation = { id: uid(), title: "New chat", messages: [], createdAt: Date.now() };
     setConversations((prev) => [conv, ...prev]);
     setActiveId(conv.id);
     return conv.id;
@@ -182,11 +174,21 @@ export default function App() {
     setActiveId((cur) => (cur === id ? null : cur));
   }
 
+  function pickSkill(id: SkillId) {
+    setPrefs((p) => withSkill(p, id));
+  }
+
+  /** Choosing a skill on the empty screen also drops an example into the box. */
+  function pickStarter(id: SkillId) {
+    pickSkill(id);
+    setDraft({ text: getSkill(id).starter, nonce: Date.now() });
+  }
+
   async function handleSend(text: string, attachments: Attachment[] = []) {
+    if (busyMsgId) return;
+
     let convId = activeId;
-    if (!convId || !conversations.some((c) => c.id === convId)) {
-      convId = newConversation();
-    }
+    if (!convId || !conversations.some((c) => c.id === convId)) convId = newConversation();
 
     const userMsg: ChatMessage = {
       id: uid(),
@@ -195,13 +197,13 @@ export default function App() {
       attachments: attachments.length ? attachments : undefined,
       createdAt: Date.now(),
     };
-    const assistantMsg: ChatMessage = {
-      id: uid(),
-      role: "assistant",
-      content: "",
-      turn: { stages: [], unified: "", participants: [] },
-      createdAt: Date.now(),
-    };
+    const assistantMsg: ChatMessage = { id: uid(), role: "assistant", content: "", createdAt: Date.now() };
+
+    // Only send real answers back to Gemini as history, never error messages.
+    const history = (conversations.find((c) => c.id === convId)?.messages ?? [])
+      .filter((m) => m.content.trim() && !m.error)
+      .slice(-HISTORY_LIMIT)
+      .map((m) => ({ role: m.role, content: m.content }));
 
     patch(convId, (c) => ({
       ...c,
@@ -212,78 +214,38 @@ export default function App() {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const id = convId;
+    const used = prefs;
+
+    const finish = (change: Partial<ChatMessage>) =>
+      patch(id, (c) => ({
+        ...c,
+        messages: c.messages.map((m) => (m.id === assistantMsg.id ? { ...m, ...change } : m)),
+      }));
 
     try {
-      const priorMessages =
-        conversations.find((c) => c.id === convId)?.messages ?? [];
-      const history = priorMessages
-        .filter((m) => m.role === "user" || (m.turn?.unified?.trim()?.length ?? 0) > 0)
-        .map((m) => ({
-          role: m.role,
-          content: m.role === "assistant" ? m.turn!.unified : m.content,
-        }));
-
-      const result: AssistantTurn = await orchestrate({
-        selection,
-        prompt: text,
-        history,
-        attachments,
-        signal: controller.signal,
-        onStage: (stage: StageOutput) => {
-          patch(convId!, (c) => ({
-            ...c,
-            messages: c.messages.map((m) =>
-              m.id === assistantMsg.id
-                ? {
-                    ...m,
-                    turn: {
-                      ...(m.turn ?? { stages: [], unified: "", participants: [] }),
-                      stages: [...(m.turn?.stages ?? []), stage],
-                      participants: [...(m.turn?.participants ?? []), stage.model],
-                    },
-                  }
-                : m
-            ),
-          }));
-        },
+      const res = await ask({ prompt: text, history, prefs: used, attachments, signal: controller.signal });
+      finish({
+        content: res.text,
+        sources: res.sources.length ? res.sources : undefined,
+        searchHtml: res.searchEntryPoint,
+        truncated: res.truncated || undefined,
+        meta: { model: res.model, skill: used.skill },
       });
-
-      patch(convId!, (c) => ({
-        ...c,
-        messages: c.messages.map((m) =>
-          m.id === assistantMsg.id ? { ...m, turn: result } : m
-        ),
-      }));
     } catch (err) {
-      if ((err as Error).name !== "AbortError") {
-        patch(convId!, (c) => ({
-          ...c,
-          messages: c.messages.map((m) =>
-            m.id === assistantMsg.id
-              ? {
-                  ...m,
-                  turn: {
-                    stages: m.turn?.stages ?? [],
-                    unified: "[error generating response]",
-                    participants: m.turn?.participants ?? [],
-                  },
-                }
-              : m
-          ),
-        }));
+      if ((err as Error).name === "AbortError") {
+        // Stopped by the user: drop the empty answer.
+        patch(id, (c) => ({ ...c, messages: c.messages.filter((m) => m.id !== assistantMsg.id) }));
+      } else {
+        finish({
+          content: err instanceof GeminiError ? err.message : "Something went wrong. Please try again.",
+          error: true,
+        });
       }
     } finally {
       setBusyMsgId(null);
       abortRef.current = null;
     }
-  }
-
-  function stop() {
-    abortRef.current?.abort();
-  }
-
-  function toggleCapability(key: CapabilityKey) {
-    setCapabilities((c) => ({ ...c, [key]: !c[key] }));
   }
 
   return (
@@ -296,17 +258,15 @@ export default function App() {
         onNew={newConversation}
         onDelete={deleteConversation}
         onToggle={() => setSidebarOpen((o) => !o)}
-        onOpenMatrix={() => setMatrixOpen(true)}
       />
 
       <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-[#121212]">
-        {/* Header */}
         <header className="z-20 flex h-14 items-center justify-between border-b border-[#222222] bg-[#121212]/95 px-4 backdrop-blur">
           <div className="flex items-center space-x-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                title="Toggle sidebar"
+                title="Show the sidebar"
                 className="rounded-lg p-1.5 text-[#888888] transition-colors hover:bg-[#1c1c1c] hover:text-white"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -329,7 +289,7 @@ export default function App() {
             ) : (
               <a
                 href="#/"
-                title="Back to OmniDesk site"
+                title="Back to the OmniDesk website"
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -338,10 +298,8 @@ export default function App() {
                 <span className="hidden sm:inline">Site</span>
               </a>
             )}
-            <ModelSwitcher value={selection} onChange={setSelection} />
+            <ModelPicker value={prefs.model} onChange={(model) => setPrefs((p) => ({ ...p, model }))} />
           </div>
-
-          <ViewToggle value={viewMode} onChange={setViewMode} />
 
           <div className="flex items-center space-x-2">
             <button
@@ -383,7 +341,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setKeyModalOpen(true)}
-              title={hasKey ? "Gemini connected — manage key" : "Connect a real model (API key)"}
+              title={hasKey ? "Gemini key saved. Click to change it" : "Add your Gemini key"}
               className={[
                 "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 hasKey
@@ -396,20 +354,9 @@ export default function App() {
               </svg>
               <span className="hidden sm:inline">{hasKey ? "Connected" : "Connect"}</span>
             </button>
-            <button
-              onClick={() => setMatrixOpen(true)}
-              className="flex items-center space-x-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#cccccc] transition-all hover:border-white hover:bg-white hover:text-black"
-            >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span className="hidden lg:inline">Strengths</span>
-            </button>
             {busyMsgId ? (
               <button
-                onClick={stop}
+                onClick={() => abortRef.current?.abort()}
                 className="rounded-lg border border-[#333333] px-3 py-1.5 font-mono text-xs text-[#cccccc] hover:bg-[#1a1a1a]"
               >
                 Stop
@@ -417,7 +364,7 @@ export default function App() {
             ) : (
               <button
                 onClick={() => active && deleteConversation(active.id)}
-                title="Clear current session"
+                title="Delete this chat"
                 className="rounded-lg border border-transparent p-1.5 text-[#888888] transition-all hover:border-[#333333] hover:bg-[#1a1a1a] hover:text-white"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -428,33 +375,30 @@ export default function App() {
           </div>
         </header>
 
-        {/* Chat area */}
         <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
           {!active || active.messages.length === 0 ? (
-            <Hero onStarter={handleSend} />
+            <div className="pb-44">
+              <Hero hasKey={hasKey} onConnect={() => setKeyModalOpen(true)} onPick={pickStarter} />
+            </div>
           ) : (
-            <div className="mx-auto max-w-3xl space-y-6 pb-28">
+            <div className="mx-auto max-w-3xl space-y-6 pb-44">
               {active.messages.map((m) => (
-                <MessageBubble
-                  key={m.id}
-                  message={m}
-                  viewMode={viewMode}
-                  streaming={m.id === busyMsgId}
-                />
+                <MessageBubble key={m.id} message={m} thinking={m.id === busyMsgId && !m.content} />
               ))}
             </div>
           )}
         </div>
 
         <Composer
-          capabilities={capabilities}
-          onToggleCapability={toggleCapability}
+          prefs={prefs}
+          onSkill={pickSkill}
+          onToggleTool={(tool: ToolId) => setPrefs((p) => withToolToggled(p, tool))}
           onSend={handleSend}
           disabled={!!busyMsgId}
+          draft={draft}
         />
       </main>
 
-      <StrengthsModal open={matrixOpen} onClose={() => setMatrixOpen(false)} />
       <ApiKeyModal
         open={keyModalOpen}
         onClose={() => setKeyModalOpen(false)}
@@ -476,7 +420,7 @@ export default function App() {
         onClose={() => setAccountOpen(false)}
         user={user}
         onSignedIn={handleSignedIn}
-        onSignedOut={handleSignedOut}
+        onSignedOut={() => setUser(null)}
       />
     </div>
   );
@@ -484,5 +428,5 @@ export default function App() {
 
 function titleFrom(text: string): string {
   const t = text.trim().replace(/\s+/g, " ");
-  return t.length > 40 ? t.slice(0, 39) + "…" : t;
+  return t.length > 40 ? t.slice(0, 39) + "..." : t;
 }

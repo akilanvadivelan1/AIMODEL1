@@ -1,8 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { orchestrate } from "../models/orchestrator";
+import { ask } from "../models/ask";
+import { GeminiError } from "../models/gemini";
 import { getApiKey } from "../models/apiKey";
-import { loadSelection } from "../models/prefs";
+import { loadPrefs } from "../models/prefs";
+import { Markdown } from "../components/Markdown";
 
 /**
  * The floating quick-search widget for the Mac app.
@@ -137,22 +139,22 @@ export function Widget() {
     abortRef.current = controller;
 
     try {
-      const turn = await orchestrate({
-        selection: loadSelection(),
+      const res = await ask({
         prompt,
         history,
+        prefs: loadPrefs(),
         signal: controller.signal,
       });
       if (controller.signal.aborted) return;
-      setAnswer(turn.unified);
+      setAnswer(res.text);
       setHistory((h) => [
         ...h,
         { role: "user", content: prompt },
-        { role: "assistant", content: turn.unified },
+        { role: "assistant", content: res.text },
       ]);
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
-        setAnswer("Something went wrong. Please try again.");
+        setAnswer(e instanceof GeminiError ? e.message : "Something went wrong. Please try again.");
       }
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
@@ -199,14 +201,7 @@ export function Widget() {
                     <span className="thinking-dots" />
                   </div>
                 ) : (
-                  answer.split("\n\n").map((para, i) => (
-                    <p
-                      key={i}
-                      className="mb-2 whitespace-pre-wrap text-[13px] leading-6 text-[#e3e3e3] last:mb-0"
-                    >
-                      {para}
-                    </p>
-                  ))
+                  <Markdown>{answer}</Markdown>
                 )}
                 <div className="mt-3 flex justify-end">
                   <button

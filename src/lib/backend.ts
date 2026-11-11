@@ -1,4 +1,4 @@
-import type { Selection } from "../components/ModelSwitcher";
+import type { Prefs } from "../models/skills";
 import type { StyleProfile } from "../models/styleProfile";
 
 const BASE = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/+$/, "");
@@ -45,7 +45,8 @@ export interface BackendUser {
 }
 
 export interface SyncedSettings {
-  selection: Selection | null;
+  /** Skill, model and tools. Checked with normalizePrefs before use. */
+  selection: Prefs | null;
   apiKey: string | null;
   styleProfile: StyleProfile | null;
   updatedAt: number;

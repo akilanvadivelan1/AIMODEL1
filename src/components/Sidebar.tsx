@@ -9,7 +9,6 @@ interface Props {
   onNew: () => void;
   onDelete: (id: string) => void;
   onToggle: () => void;
-  onOpenMatrix: () => void;
 }
 
 export function Sidebar({
@@ -20,7 +19,6 @@ export function Sidebar({
   onNew,
   onDelete,
   onToggle,
-  onOpenMatrix,
 }: Props) {
   const [filter, setFilter] = useState("");
 
@@ -39,15 +37,13 @@ export function Sidebar({
         {/* Brand + collapse */}
         <div className="flex items-center justify-between px-1.5 pt-0.5">
           <div className="flex items-center space-x-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-xs font-bold tracking-tighter text-black">
-              OM
-            </div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-xs font-bold tracking-tighter text-black">OD</div>
             <div className="flex flex-col">
               <span className="text-xs font-bold uppercase tracking-wider text-white">
-                OmniMinds
+                OmniDesk
               </span>
               <span className="font-mono text-[9px] uppercase tracking-widest text-[#777777]">
-                Quad-Model Core
+                Powered by Gemini
               </span>
             </div>
           </div>
@@ -71,7 +67,7 @@ export function Sidebar({
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span>New Session</span>
+            <span>New chat</span>
           </span>
           <span className="font-mono text-[9px] uppercase opacity-60 group-hover:opacity-100">
             ⌘K
@@ -83,7 +79,7 @@ export function Sidebar({
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter orchestrations..."
+            placeholder="Search your chats..."
             className="w-full rounded-lg border border-[#222222] bg-[#141414] px-2.5 py-1.5 pl-7 text-xs text-white placeholder-[#555555] transition-all focus:border-[#555555] focus:outline-none"
           />
           <svg className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#555555]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -91,25 +87,6 @@ export function Sidebar({
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </div>
-
-        {/* Strengths matrix trigger */}
-        <button
-          onClick={onOpenMatrix}
-          className="flex w-full items-center justify-between rounded-lg border border-[#262626] bg-[#141414] px-2.5 py-1.5 font-mono text-xs text-[#b3b3b3] transition-all hover:bg-[#1f1f1f] hover:text-white"
-        >
-          <span className="flex items-center space-x-2">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
-            <span>Strengths Matrix</span>
-          </span>
-          <span className="rounded border border-[#3a3a3a] px-1 text-[9px] uppercase text-[#999999]">
-            Inspect
-          </span>
-        </button>
       </div>
 
       {/* History */}
@@ -171,10 +148,10 @@ export function Sidebar({
           <div className="flex items-center space-x-2">
             <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-white" />
             <span className="uppercase tracking-wider text-[#cccccc]">
-              Engine: Quad Active
+              Engine: Gemini
             </span>
           </div>
-          <span className="text-[#777777]">v2.4.0</span>
+          <span className="text-[#777777]">v3.0</span>
         </div>
         <div className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-[#181818]">
           <div className="flex items-center space-x-2.5">
@@ -183,7 +160,7 @@ export function Sidebar({
             </div>
             <div>
               <div className="text-xs font-bold leading-tight text-white">Operator</div>
-              <div className="font-mono text-[9px] text-[#777777]">Noir Workspace</div>
+              <div className="font-mono text-[9px] text-[#777777]">Your workspace</div>
             </div>
           </div>
         </div>

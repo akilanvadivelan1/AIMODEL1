@@ -11,7 +11,7 @@ Press **Option + /** from any app.
 3. The answer appears under the bar. You can keep asking follow-ups.
 4. Press **Escape** to clear it, and Escape again to hide it. Pressing Option + / again also hides it.
 
-The widget uses the same Gemini key and chosen AI as the main app, so connect your key in the main window first. Clicking another app hides the widget, unless it is holding an answer.
+The widget uses the same Gemini key, skill, model, and tools as the main app, so connect your key in the main window first. Clicking another app hides the widget, unless it is holding an answer.
 
 ## The main window
 
@@ -55,7 +55,7 @@ For live reload while developing, run `npm run tauri:dev`.
 
 ## Accounts
 
-If the build was given an `API_URL` (see `backend/README.md`), a Sign in button appears in the main window. Signing in keeps your Gemini key, chosen AI, and writing style on every device. In the Mac app, sign in with the emailed code.
+If the build was given an `API_URL` (see `backend/README.md`), a Sign in button appears in the main window. Signing in keeps your Gemini key, favorite skill and model, and writing style on every device. In the Mac app, sign in with the emailed code.
 
 ## Changing the shortcut
 

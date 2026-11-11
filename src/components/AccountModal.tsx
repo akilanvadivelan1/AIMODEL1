@@ -153,7 +153,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
             </div>
             <p className="leading-relaxed text-[#b3b3b3]">
               Accounts are not switched on yet. When they are, you will be able to sign
-              in with an emailed code or with Google, and your Gemini key, chosen AI,
+              in with an emailed code or with Google, and your Gemini key, favorite skill and model,
               and writing style will follow you to every device.
             </p>
             <p className="leading-relaxed text-[#777777]">
@@ -323,7 +323,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
 
               {typeof options === "object" && (options.email || options.google) && (
                 <p className="leading-relaxed text-[#b3b3b3]">
-                  Sign in to keep your Gemini key, chosen AI, and writing style on every
+                  Sign in to keep your Gemini key, favorite skill and model, and writing style on every
                   device.
                   {canEmail ? " We will email you a 6 digit code. No password needed." : ""}
                 </p>
