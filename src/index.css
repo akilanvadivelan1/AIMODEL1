@@ -137,7 +137,10 @@ html.app-view #root {
 /* The Mac quick-search widget lives in its own transparent, borderless window. */
 html.widget-view,
 html.widget-view body,
-html.widget-view #root {
+html.widget-view #root,
+html.overlay-view,
+html.overlay-view body,
+html.overlay-view #root {
   height: 100%;
   overflow: hidden;
   background: transparent !important;
@@ -200,3 +203,12 @@ html.widget-view #root {
 }
 .md th, .md td { border: 1px solid #dcd2bf; padding: 0.45em 0.7em; text-align: left; }
 .md th { background: #efe8d8; color: #16130e; }
+
+/* A ring that expands where the AI clicks */
+@keyframes ghostRipple {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.ghost-ripple {
+  animation: ghostRipple 700ms ease-out both;
+}

@@ -1,21 +1,23 @@
 // Prevents an extra console window on Windows in release. Harmless on macOS.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod control;
 mod tabs;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use tauri::{
-    AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow,
+    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindow,
     WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 const WIDGET_LABEL: &str = "widget";
 const MAIN_LABEL: &str = "main";
+const OVERLAY_LABEL: &str = "overlay";
 
 /// Size of the collapsed widget (just the logo).
 const LOGO_SIZE: f64 = 56.0;
@@ -27,6 +29,9 @@ const MENU_BAR_OFFSET: f64 = 40.0;
 /// True while the widget has text, a pending request, or an answer on screen.
 /// In that case clicking another app should not hide it.
 static WIDGET_STICKY: AtomicBool = AtomicBool::new(false);
+
+/// True only while the user has started a screen control task. Without it, no clicks or typing happen.
+static AGENT_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 /// Resize the widget and pin its top right corner to the top right of the screen.
 fn anchor_top_right(win: &WebviewWindow, width: f64, height: f64) -> tauri::Result<()> {
@@ -180,6 +185,264 @@ async fn focus_browser_tab(browser: String, window_id: i64, tab_index: u32) -> R
     .map_err(|e| e.to_string())?
 }
 
+// ---------------------------------------------------------------------------
+// Screen control: the agent looks at the screen, then clicks and types for the user.
+// ---------------------------------------------------------------------------
+
+/// Option + Return approves the next action, Option + Delete skips it, Option + Escape stops.
+/// These are global shortcuts so approving never moves focus away from the app being controlled.
+fn agent_shortcuts() -> [Shortcut; 3] {
+    [
+        Shortcut::new(Some(Modifiers::ALT), Code::Enter),
+        Shortcut::new(Some(Modifiers::ALT), Code::Backspace),
+        Shortcut::new(Some(Modifiers::ALT), Code::Escape),
+    ]
+}
+
+#[derive(Serialize)]
+struct Permissions {
+    screen: bool,
+    accessibility: bool,
+}
+
+#[tauri::command]
+fn agent_permissions() -> Permissions {
+    #[cfg(target_os = "macos")]
+    {
+        Permissions {
+            screen: control::mac::screen_allowed(),
+            accessibility: control::mac::accessibility_allowed(),
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Permissions { screen: false, accessibility: false }
+    }
+}
+
+/// Open the System Settings page where the user turns a permission on.
+#[tauri::command]
+fn open_privacy_settings(pane: String) {
+    #[cfg(target_os = "macos")]
+    control::mac::open_privacy_pane(&pane);
+    #[cfg(not(target_os = "macos"))]
+    let _ = pane;
+}
+
+#[derive(Deserialize)]
+struct AgentStart {
+    task: String,
+    /// "ask" asks before every action. "auto" only asks before risky ones.
+    mode: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct AgentTask {
+    task: String,
+    mode: String,
+    screen_w: f64,
+    screen_h: f64,
+    origin_x: f64,
+    origin_y: f64,
+}
+
+/// Begin a screen control task. Hides the main window so it is not in the way.
+#[tauri::command]
+fn agent_start(app: AppHandle, req: AgentStart) -> Result<(), String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, req);
+        return Err("Screen control works in the Mac app.".into());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let task = req.task.trim().to_string();
+        if task.is_empty() || task.chars().count() > 1500 {
+            return Err("Describe the task in a sentence or two.".into());
+        }
+        if req.mode != "ask" && req.mode != "auto" {
+            return Err("Unknown mode.".into());
+        }
+        if AGENT_ACTIVE.load(Ordering::SeqCst) {
+            return Err("A task is already running. Press Option + Escape to stop it.".into());
+        }
+        if !control::mac::screen_allowed() {
+            return Err("Turn on Screen Recording for OmniDesk first.".into());
+        }
+        if !control::mac::accessibility_allowed() {
+            return Err("Turn on Accessibility for OmniDesk first.".into());
+        }
+        let overlay = app.get_webview_window(OVERLAY_LABEL).ok_or("The control overlay is missing.")?;
+
+        // The stop shortcut must work, or we do not start at all.
+        let keys = agent_shortcuts();
+        let gs = app.global_shortcut();
+        for k in keys {
+            if gs.register(k).is_err() {
+                for done in keys {
+                    let _ = gs.unregister(done);
+                }
+                return Err("Option + Return, Option + Delete or Option + Escape is taken by another app. Free it and try again.".into());
+            }
+        }
+
+        let (w, h) = control::mac::display_size();
+        let _ = overlay.set_position(LogicalPosition::new(0.0, 0.0));
+        let _ = overlay.set_size(LogicalSize::new(w, h));
+        let _ = overlay.set_ignore_cursor_events(true);
+        let _ = overlay.show();
+        let scale = overlay.scale_factor().unwrap_or(1.0);
+        let origin = overlay
+            .outer_position()
+            .map(|p| p.to_logical::<f64>(scale))
+            .unwrap_or_else(|_| LogicalPosition::new(0.0, 0.0));
+
+        if let Some(main) = app.get_webview_window(MAIN_LABEL) {
+            let _ = main.hide();
+        }
+        WIDGET_STICKY.store(false, Ordering::SeqCst);
+        if let Some(widget) = app.get_webview_window(WIDGET_LABEL) {
+            let _ = widget.hide();
+        }
+
+        AGENT_ACTIVE.store(true, Ordering::SeqCst);
+        let payload = AgentTask { task, mode: req.mode, screen_w: w, screen_h: h, origin_x: origin.x, origin_y: origin.y };
+        app.emit_to(OVERLAY_LABEL, "agent-task", payload).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+struct AgentReport {
+    task: String,
+    summary: String,
+    success: bool,
+    steps: Vec<String>,
+}
+
+/// Finish the task: release the shortcuts, hide the overlay, bring OmniDesk back with a report.
+#[tauri::command]
+fn agent_end(app: AppHandle, report: AgentReport) {
+    AGENT_ACTIVE.store(false, Ordering::SeqCst);
+    let gs = app.global_shortcut();
+    for k in agent_shortcuts() {
+        let _ = gs.unregister(k);
+    }
+    if let Some(overlay) = app.get_webview_window(OVERLAY_LABEL) {
+        let _ = overlay.hide();
+    }
+    show_main(&app);
+    let _ = app.emit_to(MAIN_LABEL, "agent-report", report);
+}
+
+#[derive(Serialize)]
+struct Shot {
+    /// JPEG, base64 encoded.
+    image: String,
+    width: f64,
+    height: f64,
+}
+
+/// A screenshot of the main display. Only works while a task is running.
+#[tauri::command]
+async fn capture_screen() -> Result<Shot, String> {
+    if !AGENT_ACTIVE.load(Ordering::SeqCst) {
+        return Err("No screen control task is running.".into());
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        return Err("Screen control works in the Mac app.".into());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use base64::{engine::general_purpose::STANDARD, Engine};
+        tauri::async_runtime::spawn_blocking(|| -> Result<Shot, String> {
+            let bytes = control::mac::screenshot_jpeg()?;
+            let (width, height) = control::mac::display_size();
+            Ok(Shot { image: STANDARD.encode(bytes), width, height })
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum AgentAction {
+    Click {
+        x: f64,
+        y: f64,
+        #[serde(default)]
+        right: bool,
+        #[serde(default = "one")]
+        count: u32,
+    },
+    Type { text: String },
+    Keys { keys: String },
+    Scroll {
+        x: f64,
+        y: f64,
+        direction: String,
+        #[serde(default = "three")]
+        amount: i32,
+    },
+}
+
+fn one() -> u32 {
+    1
+}
+fn three() -> i32 {
+    3
+}
+
+/// Do one action. Positions are on a 0 to 1000 grid over the screenshot.
+#[tauri::command]
+async fn agent_act(action: AgentAction) -> Result<(), String> {
+    if !AGENT_ACTIVE.load(Ordering::SeqCst) {
+        return Err("Stopped.".into());
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = action;
+        return Err("Screen control works in the Mac app.".into());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+            if !control::mac::accessibility_allowed() {
+                return Err("Accessibility is off for OmniDesk. Turn it on in System Settings.".into());
+            }
+            let (w, h) = control::mac::display_size();
+            match action {
+                AgentAction::Click { x, y, right, count } => {
+                    control::mac::click(control::to_point(x, w), control::to_point(y, h), right, count)
+                }
+                AgentAction::Type { text } => {
+                    if text.chars().count() > 2000 {
+                        return Err("That text is too long to type at once.".into());
+                    }
+                    control::mac::type_text(&text)
+                }
+                AgentAction::Keys { keys } => control::mac::press(control::parse_chord(&keys)?),
+                AgentAction::Scroll { x, y, direction, amount } => {
+                    let n = amount.clamp(1, 15);
+                    let (dx, dy) = match direction.as_str() {
+                        "up" => (0, n),
+                        "down" => (0, -n),
+                        "left" => (n, 0),
+                        "right" => (-n, 0),
+                        _ => return Err("Scroll up, down, left or right.".into()),
+                    };
+                    control::mac::scroll(control::to_point(x, w), control::to_point(y, h), dx, dy)
+                }
+            }
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+}
+
 /// Bring the full OmniDesk window to the front.
 #[tauri::command]
 fn open_main_window(app: AppHandle) {
@@ -227,13 +490,25 @@ fn toggle_widget(app: &AppHandle) {
 fn main() {
     // Summon shortcut: Option + / on macOS (Option maps to ALT).
     let summon = Shortcut::new(Some(Modifiers::ALT), Code::Slash);
+    let [approve, skip, stop] = agent_shortcuts();
 
     let app = tauri::Builder::default()
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
-                    if event.state() == ShortcutState::Pressed && shortcut == &summon {
+                    if event.state() != ShortcutState::Pressed {
+                        return;
+                    }
+                    if shortcut == &summon {
                         toggle_widget(app);
+                    } else if shortcut == &approve {
+                        let _ = app.emit("agent-approve", ());
+                    } else if shortcut == &skip {
+                        let _ = app.emit("agent-skip", ());
+                    } else if shortcut == &stop {
+                        // Cut off input right away, even if the page is slow to react.
+                        AGENT_ACTIVE.store(false, Ordering::SeqCst);
+                        let _ = app.emit("agent-stop", ());
                     }
                 })
                 .build(),
@@ -246,7 +521,13 @@ fn main() {
             open_external,
             list_browser_tabs,
             read_browser_tab,
-            focus_browser_tab
+            focus_browser_tab,
+            agent_permissions,
+            open_privacy_settings,
+            agent_start,
+            agent_end,
+            capture_screen,
+            agent_act
         ])
         .setup(move |app| {
             // The small, borderless, see-through window pinned to the top right.
@@ -269,6 +550,27 @@ fn main() {
             .build()?;
 
             let _ = anchor_top_right(&widget, LOGO_SIZE, LOGO_SIZE);
+
+            // A see-through, click-through layer over the whole screen. It draws the AI's
+            // pointer and the status card, and never takes focus or mouse clicks.
+            let overlay = WebviewWindowBuilder::new(
+                app,
+                OVERLAY_LABEL,
+                WebviewUrl::App("index.html".into()),
+            )
+            .title("OmniDesk Screen Control")
+            .inner_size(800.0, 600.0)
+            .decorations(false)
+            .transparent(true)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .visible(false)
+            .focused(false)
+            .visible_on_all_workspaces(true)
+            .build()?;
+            let _ = overlay.set_ignore_cursor_events(true);
 
             // Clicking another app hides the widget, unless it is holding an answer.
             let w = widget.clone();

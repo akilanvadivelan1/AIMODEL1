@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import App from "./App";
 import { Landing } from "./landing/Landing";
 import { Widget } from "./widget/Widget";
+import { Overlay } from "./agent/Overlay";
 import { isTauri } from "./lib/backend";
 import "./index.css";
 
@@ -15,6 +16,7 @@ import "./index.css";
  * Inside the Mac app there are two windows that share this same page:
  *   "main"   is the full app
  *   "widget" is the small top right quick-search window
+ *   "overlay" is the see-through layer used for screen control
  * Rust gives each window a label, and we pick the screen from it.
  */
 
@@ -34,7 +36,11 @@ function windowLabel(): string {
 const IS_WIDGET =
   windowLabel() === "widget" || window.location.hash === "#/widget-preview";
 
+// The screen control layer: a see-through window over the whole screen.
+const IS_OVERLAY = windowLabel() === "overlay";
+
 if (IS_WIDGET) document.documentElement.classList.add("widget-view");
+if (IS_OVERLAY) document.documentElement.classList.add("overlay-view");
 
 function Root() {
   const [route, setRoute] = useState(window.location.hash);
@@ -57,5 +63,5 @@ function Root() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>{IS_WIDGET ? <Widget /> : <Root />}</React.StrictMode>
+  <React.StrictMode>{IS_OVERLAY ? <Overlay /> : IS_WIDGET ? <Widget /> : <Root />}</React.StrictMode>
 );

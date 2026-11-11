@@ -4,7 +4,8 @@
   "description": "Default capabilities for the OmniDesk windows",
   "windows": [
     "main",
-    "widget"
+    "widget",
+    "overlay"
   ],
   "permissions": [
     "core:default",

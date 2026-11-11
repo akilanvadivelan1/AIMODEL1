@@ -14,6 +14,7 @@ import { Hero } from "./components/Hero";
 import { ApiKeyModal } from "./components/ApiKeyModal";
 import { StyleModal } from "./components/StyleModal";
 import { AccountModal } from "./components/AccountModal";
+import { ControlModal } from "./components/ControlModal";
 import {
   api,
   backendEnabled,
@@ -26,6 +27,8 @@ import {
 import { openExternal, SITE_URL } from "./lib/external";
 import { pullSettings, resetSync, schedulePush } from "./lib/sync";
 import { readTab, type BrowserTab } from "./lib/tabs";
+import { listen } from "@tauri-apps/api/event";
+import type { Report } from "./lib/computer";
 import { buildTabPrompt, linkCitations, TAB_SYSTEM_PROMPT, type TabText } from "./models/tabbrain";
 
 const STORAGE_KEY = "omniminds.conversations.v1";
@@ -66,6 +69,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
   // The landing page's Sign in link opens the app with the sign-in window ready.
   const [accountOpen, setAccountOpen] = useState(() => window.location.hash === "#/app/signin");
   const [user, setUser] = useState<BackendUser | null>(null);
@@ -97,6 +101,34 @@ export default function App() {
       /* storage is full: skip saving this time */
     }
   }, [conversations]);
+
+  // When a screen control task ends, Rust brings this window back with a report. Show it as a chat.
+  useEffect(() => {
+    if (!isTauri) return;
+    const off = listen<Report>("agent-report", (e) => {
+      const r = e.payload;
+      const steps = r.steps.length ? `\n\nWhat I did:\n\n${r.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}` : "";
+      const conv: Conversation = {
+        id: uid(),
+        title: titleFrom(r.task),
+        createdAt: Date.now(),
+        messages: [
+          { id: uid(), role: "user", content: `Screen task: ${r.task}`, createdAt: Date.now() },
+          {
+            id: uid(),
+            role: "assistant",
+            content: `**${r.success ? "Done." : "Stopped."}** ${r.summary}${steps}`,
+            createdAt: Date.now(),
+          },
+        ],
+      };
+      setConversations((prev) => [conv, ...prev]);
+      setActiveId(conv.id);
+    });
+    return () => {
+      off.then((fn) => fn()).catch(() => undefined);
+    };
+  }, []);
 
   // Tidy the address once the sign-in window has opened from the landing page.
   useEffect(() => {
@@ -369,6 +401,18 @@ export default function App() {
               </svg>
               <span className="hidden lg:inline">{hasStyle ? "My style" : "Teach style"}</span>
             </button>
+            {isTauri && (
+              <button
+                onClick={() => setControlOpen(true)}
+                title="Let OmniDesk click and type on your screen for you"
+                className="flex items-center space-x-1.5 whitespace-nowrap rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-2.5 py-1.5 font-mono text-xs text-[#2e2a23] transition-all hover:border-ink hover:bg-ink hover:text-cream"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 3l14 8-6 2-2 6z" />
+                </svg>
+                <span className="hidden lg:inline">Control</span>
+              </button>
+            )}
             <button
               onClick={() => setKeyModalOpen(true)}
               title={hasKey ? "Gemini key saved. Click to change it" : "Add your Gemini key"}
@@ -437,6 +481,7 @@ export default function App() {
           schedulePush();
         }}
       />
+      <ControlModal open={controlOpen} onClose={() => setControlOpen(false)} onNeedKey={() => setKeyModalOpen(true)} />
       <StyleModal
         open={styleOpen}
         onClose={() => setStyleOpen(false)}
