@@ -26,8 +26,8 @@ export function SkillBar({
             className={[
               "whitespace-nowrap rounded-full border px-3 py-1 font-bold transition-all",
               on
-                ? "border-white bg-white text-black"
-                : "border-[#2e2e2e] bg-[#141414] text-[#999999] hover:border-[#666666] hover:text-white",
+                ? "border-ink bg-ink text-cream"
+                : "border-[#dcd2bf] bg-[#fbf8f1] text-[#5f584d] hover:border-[#8a8272] hover:text-ink",
             ].join(" ")}
           >
             {s.name}

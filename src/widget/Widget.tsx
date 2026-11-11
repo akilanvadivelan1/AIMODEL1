@@ -172,7 +172,7 @@ export function Widget() {
         className={expanded ? "w-[460px]" : "h-14 w-14"}
       >
         {expanded ? (
-          <div className="overflow-hidden rounded-2xl border border-[#2e2e2e] bg-[#121212] text-white">
+          <div className="overflow-hidden rounded-2xl border border-[#dcd2bf] bg-[#f4efe4] text-ink">
             <div className="flex h-14 items-center gap-2 pl-4 pr-2">
               <input
                 ref={inputRef}
@@ -183,20 +183,20 @@ export function Widget() {
                 }}
                 placeholder="Ask OmniDesk anything"
                 spellCheck={false}
-                className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#666666]"
+                className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-[#8a8272]"
               />
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-black">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ink text-cream">
                 <LogoMark className="h-6 w-6" />
               </div>
             </div>
 
             {(busy || answer || question) && (
-              <div className="max-h-[320px] overflow-y-auto border-t border-[#222222] px-4 py-3">
+              <div className="max-h-[320px] overflow-y-auto border-t border-[#e6ddca] px-4 py-3">
                 {question && (
-                  <p className="mb-2 font-mono text-[11px] text-[#777777]">{question}</p>
+                  <p className="mb-2 font-mono text-[11px] text-[#756d5f]">{question}</p>
                 )}
                 {busy ? (
-                  <div className="flex items-center gap-1 font-mono text-[13px] text-[#888888]">
+                  <div className="flex items-center gap-1 font-mono text-[13px] text-[#6a6255]">
                     <span>thinking</span>
                     <span className="thinking-dots" />
                   </div>
@@ -206,7 +206,7 @@ export function Widget() {
                 <div className="mt-3 flex justify-end">
                   <button
                     onClick={() => tell("open_main_window")}
-                    className="font-mono text-[10px] text-[#666666] transition-colors hover:text-white"
+                    className="font-mono text-[10px] text-[#8a8272] transition-colors hover:text-ink"
                   >
                     Open OmniDesk
                   </button>
@@ -219,7 +219,7 @@ export function Widget() {
             onMouseEnter={() => setExpanded(true)}
             onClick={() => setExpanded(true)}
             aria-label="Open OmniDesk search"
-            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-black"
+            className="flex h-14 w-14 items-center justify-center rounded-2xl bg-ink text-cream"
           >
             <LogoMark className="h-8 w-8" />
           </button>

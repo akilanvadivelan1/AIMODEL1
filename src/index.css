@@ -1,4 +1,37 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+/* Fonts for OmniDesk, hosted with the app. All three are open-licensed (SIL OFL). */
+
+@font-face {
+  font-family: "DM Sans";
+  src: url("./assets/fonts/dm-sans.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("./assets/fonts/instrument-serif.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("./assets/fonts/instrument-serif-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./assets/fonts/jetbrains-mono.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}
+
 
 @tailwind base;
 @tailwind components;
@@ -12,9 +45,9 @@ body,
 
 body {
   margin: 0;
-  background-color: #121212;
-  color: #ffffff;
-  font-family: "Space Grotesk", "Space Mono", monospace, sans-serif;
+  background-color: #f4efe4;
+  color: #16130e;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* The chat app is a fixed, full-screen layout and must NOT scroll the page.
@@ -27,23 +60,23 @@ html.app-view #root {
 }
 
 .font-mono {
-  font-family: "Space Mono", monospace;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 
-/* Monochrome scrollbars */
+/* Warm paper scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #080808;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: #cfc4ad;
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #666666;
+  background: #a89d86;
 }
 
 /* Subtle monochrome breathing pulse */
@@ -65,16 +98,16 @@ html.app-view #root {
 /* Micro scanline background pattern for noir texture */
 .noir-texture {
   background-image: linear-gradient(
-    rgba(255, 255, 255, 0.015) 1px,
+    rgba(22, 19, 14, 0.025) 1px,
     transparent 1px
   );
   background-size: 100% 3px;
 }
 
-/* Inverted selection */
+/* Highlighter selection */
 ::selection {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: #ffd644;
+  color: #16130e;
 }
 
 /* Animated "...thinking" dots */
@@ -114,16 +147,16 @@ html.widget-view #root {
 .md {
   font-size: 13.5px;
   line-height: 1.75;
-  color: #e3e3e3;
+  color: #2e2a23;
   overflow-wrap: anywhere;
 }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p { margin: 0.75em 0; }
-.md strong { color: #ffffff; }
+.md strong { color: #16130e; }
 .md h1, .md h2, .md h3, .md h4 {
   font-weight: 700;
-  color: #ffffff;
+  color: #16130e;
   margin: 1.25em 0 0.5em;
   line-height: 1.3;
 }
@@ -136,26 +169,26 @@ html.widget-view #root {
 .md li { margin: 0.3em 0; }
 .md li > p { margin: 0.3em 0; }
 .md a {
-  color: #ffffff;
+  color: #16130e;
   text-decoration: underline;
-  text-decoration-color: #666666;
+  text-decoration-color: #bfb4a0;
   text-underline-offset: 3px;
 }
-.md a:hover { text-decoration-color: #ffffff; }
+.md a:hover { text-decoration-color: #d4430f; }
 .md blockquote {
-  border-left: 2px solid #444444;
+  border-left: 2px solid #bfb4a0;
   padding-left: 1em;
   margin: 0.9em 0;
-  color: #aaaaaa;
+  color: #5f584d;
 }
-.md hr { border: 0; border-top: 1px solid #2a2a2a; margin: 1.2em 0; }
+.md hr { border: 0; border-top: 1px solid #dcd2bf; margin: 1.2em 0; }
 .md :not(pre) > code {
-  background: #1c1c1c;
-  border: 1px solid #2a2a2a;
+  background: #efe8d8;
+  border: 1px solid #dcd2bf;
   border-radius: 6px;
   padding: 0.1em 0.4em;
   font-size: 0.88em;
-  font-family: "Space Mono", monospace;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 .md table {
   display: block;
@@ -165,5 +198,5 @@ html.widget-view #root {
   margin: 0.9em 0;
   font-size: 0.95em;
 }
-.md th, .md td { border: 1px solid #2a2a2a; padding: 0.45em 0.7em; text-align: left; }
-.md th { background: #161616; color: #ffffff; }
+.md th, .md td { border: 1px solid #dcd2bf; padding: 0.45em 0.7em; text-align: left; }
+.md th { background: #efe8d8; color: #16130e; }

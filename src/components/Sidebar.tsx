@@ -29,7 +29,7 @@ export function Sidebar({
   return (
     <aside
       className={[
-        "flex h-screen w-64 shrink-0 flex-col justify-between border-r border-[#222222] bg-[#0d0d0d] transition-all duration-300 z-30",
+        "flex h-screen w-64 shrink-0 flex-col justify-between border-r border-[#e6ddca] bg-[#ece5d6] transition-all duration-300 z-30",
         open ? "ml-0" : "-ml-64",
       ].join(" ")}
     >
@@ -37,12 +37,12 @@ export function Sidebar({
         {/* Brand + collapse */}
         <div className="flex items-center justify-between px-1.5 pt-0.5">
           <div className="flex items-center space-x-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-xs font-bold tracking-tighter text-black">OD</div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink text-xs font-bold tracking-tighter text-cream">OD</div>
             <div className="flex flex-col">
-              <span className="text-xs font-bold uppercase tracking-wider text-white">
+              <span className="text-xs font-bold uppercase tracking-wider text-ink">
                 OmniDesk
               </span>
-              <span className="font-mono text-[9px] uppercase tracking-widest text-[#777777]">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-[#756d5f]">
                 Powered by Gemini
               </span>
             </div>
@@ -50,7 +50,7 @@ export function Sidebar({
           <button
             onClick={onToggle}
             title="Collapse sidebar"
-            className="rounded-md p-1 text-[#777777] transition-all hover:bg-[#1a1a1a] hover:text-white"
+            className="rounded-md p-1 text-[#756d5f] transition-all hover:bg-[#fbf8f1] hover:text-ink"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -61,7 +61,7 @@ export function Sidebar({
         {/* New session */}
         <button
           onClick={onNew}
-          className="group flex w-full items-center justify-between rounded-lg border border-[#2e2e2e] bg-[#181818] px-3 py-2 text-xs font-semibold tracking-wide text-white transition-all duration-200 hover:border-white hover:bg-white hover:text-black"
+          className="group flex w-full items-center justify-between rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-3 py-2 text-xs font-semibold tracking-wide text-ink transition-all duration-200 hover:border-ink hover:bg-ink hover:text-cream"
         >
           <span className="flex items-center space-x-2">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -80,9 +80,9 @@ export function Sidebar({
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Search your chats..."
-            className="w-full rounded-lg border border-[#222222] bg-[#141414] px-2.5 py-1.5 pl-7 text-xs text-white placeholder-[#555555] transition-all focus:border-[#555555] focus:outline-none"
+            className="w-full rounded-lg border border-[#e6ddca] bg-[#fbf8f1] px-2.5 py-1.5 pl-7 text-xs text-ink placeholder-[#9a9283] transition-all focus:border-[#9a9283] focus:outline-none"
           />
-          <svg className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#555555]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <svg className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#9a9283]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -92,12 +92,12 @@ export function Sidebar({
       {/* History */}
       <div className="flex-1 space-y-4 overflow-y-auto px-2 text-xs">
         <div>
-          <div className="px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+          <div className="px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-[#9a9283]">
             Sessions
           </div>
           <div className="mt-1 space-y-0.5">
             {visible.length === 0 && (
-              <p className="px-2.5 py-3 font-mono text-[10px] text-[#555555]">
+              <p className="px-2.5 py-3 font-mono text-[10px] text-[#9a9283]">
                 No sessions yet.
               </p>
             )}
@@ -109,8 +109,8 @@ export function Sidebar({
                   className={[
                     "group flex cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 transition-all",
                     active
-                      ? "border border-[#2a2a2a] bg-[#1a1a1a] text-white"
-                      : "text-[#999999] hover:bg-[#161616] hover:text-white",
+                      ? "border border-[#dcd2bf] bg-[#fbf8f1] text-ink"
+                      : "text-[#5f584d] hover:bg-[#fbf8f1] hover:text-ink",
                   ].join(" ")}
                 >
                   <span
@@ -124,14 +124,14 @@ export function Sidebar({
                     <button
                       onClick={() => onDelete(c.id)}
                       title="Delete"
-                      className="hidden text-[#666666] hover:text-white group-hover:block"
+                      className="hidden text-[#8a8272] hover:text-ink group-hover:block"
                     >
                       ×
                     </button>
                     <span
                       className={[
                         "h-1.5 w-1.5 shrink-0 rounded-full",
-                        active ? "bg-white" : "bg-[#444444] group-hover:bg-white",
+                        active ? "bg-ink" : "bg-[#bfb4a0] group-hover:bg-ink",
                       ].join(" ")}
                     />
                   </span>
@@ -143,24 +143,24 @@ export function Sidebar({
       </div>
 
       {/* Bottom capsule */}
-      <div className="space-y-2 border-t border-[#1f1f1f] bg-[#090909] p-3">
-        <div className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#121212] px-2.5 py-1.5 font-mono text-[10px]">
+      <div className="space-y-2 border-t border-[#e6ddca] bg-[#ece5d6] p-3">
+        <div className="flex items-center justify-between rounded-lg border border-[#e6ddca] bg-[#f4efe4] px-2.5 py-1.5 font-mono text-[10px]">
           <div className="flex items-center space-x-2">
-            <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-white" />
-            <span className="uppercase tracking-wider text-[#cccccc]">
+            <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-ink" />
+            <span className="uppercase tracking-wider text-[#2e2a23]">
               Engine: Gemini
             </span>
           </div>
-          <span className="text-[#777777]">v3.0</span>
+          <span className="text-[#756d5f]">v3.0</span>
         </div>
-        <div className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-[#181818]">
+        <div className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-[#fbf8f1]">
           <div className="flex items-center space-x-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-xs font-bold text-cream">
               OP
             </div>
             <div>
-              <div className="text-xs font-bold leading-tight text-white">Operator</div>
-              <div className="font-mono text-[9px] text-[#777777]">Your workspace</div>
+              <div className="text-xs font-bold leading-tight text-ink">Operator</div>
+              <div className="font-mono text-[9px] text-[#756d5f]">Your workspace</div>
             </div>
           </div>
         </div>

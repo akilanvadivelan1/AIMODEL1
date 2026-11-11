@@ -25,15 +25,15 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#333333] bg-[#121212] font-mono shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#252525] bg-[#0a0a0a] px-5 py-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#dcd2bf] bg-[#f4efe4] font-mono shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#e6ddca] bg-[#ece5d6] px-5 py-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-ink">
             Connect a Real Model
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-[#888888] transition-colors hover:bg-[#222222] hover:text-white"
+            className="rounded-lg p-1 text-[#6a6255] transition-colors hover:bg-[#e6ddca] hover:text-ink"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -42,8 +42,8 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
         </div>
 
         <div className="space-y-4 p-5 text-xs">
-          <p className="leading-relaxed text-[#b3b3b3]">
-            Paste a free <strong className="text-white">Google Gemini API key</strong> to
+          <p className="leading-relaxed text-[#4d473d]">
+            Paste a free <strong className="text-ink">Google Gemini API key</strong> to
             get real answers. It is saved on this device. Questions go straight from
             your device to Google. If you sign in to OmniDesk, the key is also stored
             encrypted on your account so it follows you to other devices.
@@ -60,7 +60,7 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
                 openExternal("https://aistudio.google.com/app/apikey");
               }
             }}
-            className="inline-flex items-center gap-1.5 text-[#cccccc] underline decoration-[#444444] underline-offset-2 hover:text-white"
+            className="inline-flex items-center gap-1.5 text-[#2e2a23] underline decoration-[#bfb4a0] underline-offset-2 hover:text-ink"
           >
             Get a free key at aistudio.google.com
           </a>
@@ -70,7 +70,7 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Paste your Gemini key (starts with AQ. or AIza)"
-            className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-white placeholder-[#555555] outline-none focus:border-white"
+            className="w-full rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-3 py-2 text-ink placeholder-[#9a9283] outline-none focus:border-ink"
           />
 
           <div className="flex items-center justify-between pt-1">
@@ -80,27 +80,27 @@ export function ApiKeyModal({ open, onClose, onSaved }: Props) {
                 setValue("");
                 onSaved();
               }}
-              className="text-[11px] text-[#777777] hover:text-white"
+              className="text-[11px] text-[#756d5f] hover:text-ink"
             >
               Clear key
             </button>
             <div className="flex gap-2">
               <button
                 onClick={onClose}
-                className="rounded-lg border border-[#333333] px-3 py-1.5 text-[#cccccc] hover:bg-[#1a1a1a]"
+                className="rounded-lg border border-[#dcd2bf] px-3 py-1.5 text-[#2e2a23] hover:bg-[#fbf8f1]"
               >
                 Cancel
               </button>
               <button
                 onClick={save}
-                className="rounded-lg bg-white px-4 py-1.5 font-bold text-black transition-colors hover:bg-[#d4d4d4]"
+                className="rounded-lg bg-ink px-4 py-1.5 font-bold text-cream transition-colors hover:bg-[#3a342a]"
               >
                 Save
               </button>
             </div>
           </div>
 
-          <p className="border-t border-[#222222] pt-3 text-[10px] leading-relaxed text-[#666666]">
+          <p className="border-t border-[#e6ddca] pt-3 text-[10px] leading-relaxed text-[#8a8272]">
             Note: anyone who uses this browser profile can use the saved key. Only
             save it on a device you trust.
           </p>

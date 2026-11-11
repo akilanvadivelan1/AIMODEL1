@@ -260,14 +260,14 @@ export default function App() {
         onToggle={() => setSidebarOpen((o) => !o)}
       />
 
-      <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-[#121212]">
-        <header className="z-20 flex h-14 items-center justify-between border-b border-[#222222] bg-[#121212]/95 px-4 backdrop-blur">
+      <main className="relative flex h-screen flex-1 flex-col overflow-hidden bg-[#f4efe4]">
+        <header className="z-20 flex h-14 items-center justify-between border-b border-[#e6ddca] bg-[#f4efe4]/95 px-4 backdrop-blur">
           <div className="flex items-center space-x-3">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
                 title="Show the sidebar"
-                className="rounded-lg p-1.5 text-[#888888] transition-colors hover:bg-[#1c1c1c] hover:text-white"
+                className="rounded-lg p-1.5 text-[#6a6255] transition-colors hover:bg-[#fbf8f1] hover:text-ink"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -279,7 +279,7 @@ export default function App() {
               <button
                 onClick={() => openExternal(SITE_URL)}
                 title="Open the OmniDesk website"
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-2.5 py-1.5 font-mono text-xs text-[#5f584d] transition-all hover:border-ink hover:text-ink"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -290,7 +290,7 @@ export default function App() {
               <a
                 href="#/"
                 title="Back to the OmniDesk website"
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#2b2b2b] bg-[#1a1a1a] px-2.5 py-1.5 font-mono text-xs text-[#999999] transition-all hover:border-white hover:text-white"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-2.5 py-1.5 font-mono text-xs text-[#5f584d] transition-all hover:border-ink hover:text-ink"
               >
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -314,8 +314,8 @@ export default function App() {
               className={[
                 "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 user
-                  ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
-                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+                  ? "border-[#b7d0b4] bg-[#e8f1e6] text-[#2f6b3a] hover:border-ink"
+                  : "border-[#dcd2bf] bg-[#fbf8f1] text-[#2e2a23] hover:border-ink hover:bg-ink hover:text-cream",
               ].join(" ")}
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -330,8 +330,8 @@ export default function App() {
               className={[
                 "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 hasStyle
-                  ? "border-[#3a5a3a] bg-[#101810] text-[#9fcf9f] hover:border-white"
-                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+                  ? "border-[#b7d0b4] bg-[#e8f1e6] text-[#2f6b3a] hover:border-ink"
+                  : "border-[#dcd2bf] bg-[#fbf8f1] text-[#2e2a23] hover:border-ink hover:bg-ink hover:text-cream",
               ].join(" ")}
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -345,8 +345,8 @@ export default function App() {
               className={[
                 "flex items-center space-x-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 font-mono text-xs transition-all",
                 hasKey
-                  ? "border-white bg-white text-black"
-                  : "border-[#2b2b2b] bg-[#1a1a1a] text-[#cccccc] hover:border-white hover:bg-white hover:text-black",
+                  ? "border-ink bg-ink text-cream"
+                  : "border-[#dcd2bf] bg-[#fbf8f1] text-[#2e2a23] hover:border-ink hover:bg-ink hover:text-cream",
               ].join(" ")}
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -357,7 +357,7 @@ export default function App() {
             {busyMsgId ? (
               <button
                 onClick={() => abortRef.current?.abort()}
-                className="rounded-lg border border-[#333333] px-3 py-1.5 font-mono text-xs text-[#cccccc] hover:bg-[#1a1a1a]"
+                className="rounded-lg border border-[#dcd2bf] px-3 py-1.5 font-mono text-xs text-[#2e2a23] hover:bg-[#fbf8f1]"
               >
                 Stop
               </button>
@@ -365,7 +365,7 @@ export default function App() {
               <button
                 onClick={() => active && deleteConversation(active.id)}
                 title="Delete this chat"
-                className="rounded-lg border border-transparent p-1.5 text-[#888888] transition-all hover:border-[#333333] hover:bg-[#1a1a1a] hover:text-white"
+                className="rounded-lg border border-transparent p-1.5 text-[#6a6255] transition-all hover:border-[#dcd2bf] hover:bg-[#fbf8f1] hover:text-ink"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

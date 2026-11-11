@@ -133,13 +133,13 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
   // No backend address was set when this copy of the app was built.
   if (!backendEnabled && !user) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#333333] bg-[#121212] font-mono shadow-2xl">
-          <div className="flex items-center justify-between border-b border-[#252525] bg-[#0a0a0a] px-5 py-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white">Sign in</h3>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#dcd2bf] bg-[#f4efe4] font-mono shadow-2xl">
+          <div className="flex items-center justify-between border-b border-[#e6ddca] bg-[#ece5d6] px-5 py-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-ink">Sign in</h3>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-[#888888] transition-colors hover:bg-[#222222] hover:text-white"
+              className="rounded-lg p-1 text-[#6a6255] transition-colors hover:bg-[#e6ddca] hover:text-ink"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -147,22 +147,22 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
             </button>
           </div>
           <div className="space-y-4 p-5 text-xs">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#3a3a3a] px-3 py-1 text-[10px] uppercase tracking-widest text-[#aaaaaa]">
-              <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-white" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#dcd2bf] px-3 py-1 text-[10px] uppercase tracking-widest text-[#4d473d]">
+              <span className="pulse-mono h-1.5 w-1.5 rounded-full bg-ink" />
               Coming soon
             </div>
-            <p className="leading-relaxed text-[#b3b3b3]">
+            <p className="leading-relaxed text-[#4d473d]">
               Accounts are not switched on yet. When they are, you will be able to sign
               in with an emailed code or with Google, and your Gemini key, favorite skill and model,
               and writing style will follow you to every device.
             </p>
-            <p className="leading-relaxed text-[#777777]">
+            <p className="leading-relaxed text-[#756d5f]">
               Until then, OmniDesk saves those things on this device, so you only need
               to set them up once here.
             </p>
             <button
               onClick={onClose}
-              className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4]"
+              className="w-full rounded-lg bg-ink px-4 py-2 font-bold text-cream transition-colors hover:bg-[#3a342a]"
             >
               Got it
             </button>
@@ -231,15 +231,15 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#333333] bg-[#121212] font-mono shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#252525] bg-[#0a0a0a] px-5 py-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#dcd2bf] bg-[#f4efe4] font-mono shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#e6ddca] bg-[#ece5d6] px-5 py-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-ink">
             {user ? "Your account" : "Sign in"}
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-[#888888] transition-colors hover:bg-[#222222] hover:text-white"
+            className="rounded-lg p-1 text-[#6a6255] transition-colors hover:bg-[#e6ddca] hover:text-ink"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -250,10 +250,10 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
         <div className="space-y-4 p-5 text-xs">
           {user ? (
             <>
-              <p className="leading-relaxed text-[#b3b3b3]">
-                Signed in as <strong className="text-white">{user.email}</strong>.
+              <p className="leading-relaxed text-[#4d473d]">
+                Signed in as <strong className="text-ink">{user.email}</strong>.
               </p>
-              <div className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2.5 leading-relaxed text-[#999999]">
+              <div className="rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-3 py-2.5 leading-relaxed text-[#5f584d]">
                 Synced to your account: your Gemini key (stored encrypted), the AI you
                 picked, and your writing style. Your chats stay on this device.
               </div>
@@ -261,21 +261,21 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
               {error && <ErrorBox text={error} />}
 
               {confirmDelete ? (
-                <div className="space-y-2 rounded-lg border border-[#5a2a2a] bg-[#1e1212] p-3">
-                  <p className="text-[#e59b9b]">
+                <div className="space-y-2 rounded-lg border border-[#e8bfb3] bg-[#fbe9e3] p-3">
+                  <p className="text-[#b3321a]">
                     This permanently deletes your account and everything synced to it.
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={deleteAccount}
                       disabled={busy}
-                      className="rounded-lg bg-[#e59b9b] px-3 py-1.5 font-bold text-black disabled:opacity-40"
+                      className="rounded-lg bg-[#b3321a] px-3 py-1.5 font-bold text-cream disabled:opacity-40"
                     >
                       Delete everything
                     </button>
                     <button
                       onClick={() => setConfirmDelete(false)}
-                      className="rounded-lg border border-[#333333] px-3 py-1.5 text-[#cccccc] hover:bg-[#1a1a1a]"
+                      className="rounded-lg border border-[#dcd2bf] px-3 py-1.5 text-[#2e2a23] hover:bg-[#fbf8f1]"
                     >
                       Keep my account
                     </button>
@@ -285,14 +285,14 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
                 <div className="flex items-center justify-between pt-1">
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="text-[11px] text-[#777777] hover:text-white"
+                    className="text-[11px] text-[#756d5f] hover:text-ink"
                   >
                     Delete my account
                   </button>
                   <button
                     onClick={signOut}
                     disabled={busy}
-                    className="rounded-lg bg-white px-4 py-1.5 font-bold text-black transition-colors hover:bg-[#d4d4d4] disabled:opacity-40"
+                    className="rounded-lg bg-ink px-4 py-1.5 font-bold text-cream transition-colors hover:bg-[#3a342a] disabled:opacity-40"
                   >
                     Sign out
                   </button>
@@ -302,7 +302,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
           ) : step === "email" ? (
             <>
               {options === "loading" && (
-                <p className="text-[#777777]">Checking sign-in options...</p>
+                <p className="text-[#756d5f]">Checking sign-in options...</p>
               )}
 
               {options === "error" && (
@@ -310,7 +310,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
                   <ErrorBox text="Could not reach the OmniDesk server. Check your connection and try again." />
                   <button
                     onClick={loadOptions}
-                    className="w-full rounded-lg border border-[#333333] px-4 py-2 text-[#cccccc] hover:bg-[#1a1a1a]"
+                    className="w-full rounded-lg border border-[#dcd2bf] px-4 py-2 text-[#2e2a23] hover:bg-[#fbf8f1]"
                   >
                     Try again
                   </button>
@@ -322,7 +322,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
               )}
 
               {typeof options === "object" && (options.email || options.google) && (
-                <p className="leading-relaxed text-[#b3b3b3]">
+                <p className="leading-relaxed text-[#4d473d]">
                   Sign in to keep your Gemini key, favorite skill and model, and writing style on every
                   device.
                   {canEmail ? " We will email you a 6 digit code. No password needed." : ""}
@@ -338,12 +338,12 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
                     onKeyDown={(e) => e.key === "Enter" && email.trim() && !busy && sendCode()}
                     placeholder="you@example.com"
                     autoComplete="email"
-                    className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-white placeholder-[#555555] outline-none focus:border-white"
+                    className="w-full rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-3 py-2 text-ink placeholder-[#9a9283] outline-none focus:border-ink"
                   />
                   <button
                     onClick={sendCode}
                     disabled={busy || !email.trim()}
-                    className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4] disabled:opacity-40"
+                    className="w-full rounded-lg bg-ink px-4 py-2 font-bold text-cream transition-colors hover:bg-[#3a342a] disabled:opacity-40"
                   >
                     {busy ? "Sending..." : "Email me a code"}
                   </button>
@@ -353,16 +353,16 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
               {error && <ErrorBox text={error} />}
 
               {canEmail && canGoogle && (
-                <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[#555555]">
-                  <span className="h-px flex-1 bg-[#222222]" />
+                <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[#9a9283]">
+                  <span className="h-px flex-1 bg-[#e6ddca]" />
                   or
-                  <span className="h-px flex-1 bg-[#222222]" />
+                  <span className="h-px flex-1 bg-[#e6ddca]" />
                 </div>
               )}
               {canGoogle && <div ref={googleRef} className="flex justify-center" />}
 
               {typeof options === "object" && options.google && isTauri && (
-                <p className="text-[10px] leading-relaxed text-[#666666]">
+                <p className="text-[10px] leading-relaxed text-[#8a8272]">
                   {canEmail
                     ? "Google sign-in works on the web version for now. In the Mac app, use the email code."
                     : "Google sign-in for the Mac app is coming soon. For now, use the web version."}
@@ -371,8 +371,8 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
             </>
           ) : (
             <>
-              <p className="leading-relaxed text-[#b3b3b3]">
-                We sent a 6 digit code to <strong className="text-white">{email.trim()}</strong>.
+              <p className="leading-relaxed text-[#4d473d]">
+                We sent a 6 digit code to <strong className="text-ink">{email.trim()}</strong>.
                 It expires in 10 minutes.
               </p>
 
@@ -384,7 +384,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 autoFocus
-                className="w-full rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] px-3 py-2 text-center text-lg tracking-[0.5em] text-white placeholder-[#444444] outline-none focus:border-white"
+                className="w-full rounded-lg border border-[#dcd2bf] bg-[#fbf8f1] px-3 py-2 text-center text-lg tracking-[0.5em] text-ink placeholder-[#bfb4a0] outline-none focus:border-ink"
               />
 
               {error && <ErrorBox text={error} />}
@@ -392,7 +392,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
               <button
                 onClick={verify}
                 disabled={busy || code.length !== 6}
-                className="w-full rounded-lg bg-white px-4 py-2 font-bold text-black transition-colors hover:bg-[#d4d4d4] disabled:opacity-40"
+                className="w-full rounded-lg bg-ink px-4 py-2 font-bold text-cream transition-colors hover:bg-[#3a342a] disabled:opacity-40"
               >
                 {busy ? "Checking..." : "Sign in"}
               </button>
@@ -403,7 +403,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
                   setCode("");
                   setError("");
                 }}
-                className="text-[11px] text-[#777777] hover:text-white"
+                className="text-[11px] text-[#756d5f] hover:text-ink"
               >
                 Use a different email or send a new code
               </button>
@@ -417,7 +417,7 @@ export function AccountModal({ open, onClose, user, onSignedIn, onSignedOut }: P
 
 function ErrorBox({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-[#5a2a2a] bg-[#1e1212] px-3 py-2 text-[#e59b9b]">
+    <div className="rounded-lg border border-[#e8bfb3] bg-[#fbe9e3] px-3 py-2 text-[#b3321a]">
       {text}
     </div>
   );
