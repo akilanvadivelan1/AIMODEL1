@@ -37,6 +37,9 @@ const msg = (e: unknown, fallback: string) => (typeof e === "string" ? e : e ins
 
 export const getPermissions = () => invoke<Permissions>("agent_permissions");
 
+/** Ask macOS for both permissions, so OmniDesk shows up in both lists. */
+export const requestPermissions = () => invoke("request_agent_permissions").catch(() => undefined);
+
 export const openPrivacySettings = (pane: "screen" | "accessibility") =>
   invoke("open_privacy_settings", { pane }).catch(() => undefined);
 

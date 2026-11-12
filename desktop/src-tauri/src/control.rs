@@ -121,14 +121,37 @@ pub mod mac {
     use std::thread::sleep;
     use std::time::Duration;
 
+    use core_foundation::base::TCFType;
+    use core_foundation::boolean::CFBoolean;
+    use core_foundation::dictionary::{CFDictionary, CFDictionaryRef};
+    use core_foundation::string::CFString;
+
     #[link(name = "CoreGraphics", kind = "framework")]
     extern "C" {
         fn CGPreflightScreenCaptureAccess() -> bool;
+        fn CGRequestScreenCaptureAccess() -> bool;
     }
 
     #[link(name = "ApplicationServices", kind = "framework")]
     extern "C" {
         fn AXIsProcessTrusted() -> bool;
+        fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
+    }
+
+    /// Ask macOS for both permissions. This adds OmniDesk to both lists in System Settings
+    /// (and shows the system prompts), so the user only has to flip the switches.
+    pub fn request_permissions() {
+        unsafe {
+            if !CGPreflightScreenCaptureAccess() {
+                let _ = CGRequestScreenCaptureAccess();
+            }
+            if !AXIsProcessTrusted() {
+                // The value of kAXTrustedCheckOptionPrompt.
+                let key = CFString::from_static_string("AXTrustedCheckOptionPrompt");
+                let opts = CFDictionary::from_CFType_pairs(&[(key.as_CFType(), CFBoolean::true_value().as_CFType())]);
+                let _ = AXIsProcessTrustedWithOptions(opts.as_concrete_TypeRef());
+            }
+        }
     }
 
     pub fn screen_allowed() -> bool {

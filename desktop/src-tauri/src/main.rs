@@ -220,6 +220,13 @@ fn agent_permissions() -> Permissions {
     }
 }
 
+/// Ask macOS for Screen Recording and Accessibility, which puts OmniDesk in both lists.
+#[tauri::command]
+fn request_agent_permissions() {
+    #[cfg(target_os = "macos")]
+    control::mac::request_permissions();
+}
+
 /// Open the System Settings page where the user turns a permission on.
 #[tauri::command]
 fn open_privacy_settings(pane: String) {
@@ -523,6 +530,7 @@ fn main() {
             read_browser_tab,
             focus_browser_tab,
             agent_permissions,
+            request_agent_permissions,
             open_privacy_settings,
             agent_start,
             agent_end,

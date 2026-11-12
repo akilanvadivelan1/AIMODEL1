@@ -22,3 +22,4 @@ base64 = "0.22"
 # Mouse, keyboard and screen access exist only on macOS.
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = { version = "0.24", features = ["highsierra"] }
+core-foundation = "0.10"

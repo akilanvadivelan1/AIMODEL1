@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getPermissions, openPrivacySettings, startTask, type Permissions, type RunMode } from "../lib/computer";
+import { getPermissions, openPrivacySettings, requestPermissions, startTask, type Permissions, type RunMode } from "../lib/computer";
 import { getApiKey } from "../models/apiKey";
 
 interface Props {
@@ -7,6 +7,10 @@ interface Props {
   onClose: () => void;
   onNeedKey: () => void;
 }
+
+/** Forgets the permissions macOS saved for older copies of OmniDesk. */
+const RESET_COMMAND =
+  "tccutil reset ScreenCapture com.omnidesk.app; tccutil reset Accessibility com.omnidesk.app";
 
 const EXAMPLES = [
   "Open Notes and write a shopping list: milk, eggs, bread",
@@ -47,6 +51,7 @@ export function ControlModal({ open, onClose, onNeedKey }: Props) {
   const [mode, setMode] = useState<RunMode>("ask");
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const check = useCallback(async () => {
     try {
@@ -69,6 +74,22 @@ export function ControlModal({ open, onClose, onNeedKey }: Props) {
 
   const ready = !!perms && perms.screen && perms.accessibility;
 
+  async function openPane(pane: "screen" | "accessibility") {
+    // Asking first puts OmniDesk in the list, so there is a switch to turn on.
+    await requestPermissions();
+    await openPrivacySettings(pane);
+  }
+
+  async function copyReset() {
+    try {
+      await navigator.clipboard.writeText(RESET_COMMAND);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard not available */
+    }
+  }
+
   async function start() {
     setError("");
     if (!getApiKey()) {
@@ -78,7 +99,8 @@ export function ControlModal({ open, onClose, onNeedKey }: Props) {
     }
     setStarting(true);
     try {
-      await startTask(task.trim(), mode);
+      // A task copied from an old report starts with "Screen task:". Drop that label.
+      await startTask(task.trim().replace(/^screen task:\s*/i, ""), mode);
       onClose();
     } catch (e) {
       setError((e as Error).message);
@@ -114,15 +136,44 @@ export function ControlModal({ open, onClose, onNeedKey }: Props) {
               ok={!!perms?.screen}
               title="Screen Recording"
               help="So OmniDesk can see the screen. After you turn it on, quit and reopen OmniDesk."
-              onOpen={() => void openPrivacySettings("screen")}
+              onOpen={() => void openPane("screen")}
             />
             <Row
               ok={!!perms?.accessibility}
               title="Accessibility"
               help="So OmniDesk can move the pointer, click and type."
-              onOpen={() => void openPrivacySettings("accessibility")}
+              onOpen={() => void openPane("accessibility")}
             />
           </div>
+
+          {perms && !ready && (
+            <details className="rounded-lg border border-[#e6ddca] bg-[#ece5d6] p-3 text-[11px] leading-relaxed text-[#4d473d]">
+              <summary className="cursor-pointer font-bold text-ink">Switch is on but this is still red?</summary>
+              <p className="mt-2">
+                macOS is remembering an older copy of OmniDesk. Every new version counts as a new app, so the old
+                switch does not apply. To clear it:
+              </p>
+              <ol className="mt-2 list-decimal space-y-1 pl-4">
+                <li>Copy this command and paste it in Terminal, then press Return.</li>
+              </ol>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded border border-[#dcd2bf] bg-[#fbf8f1] px-2 py-1 text-[10px] text-ink">
+                  {RESET_COMMAND}
+                </code>
+                <button
+                  onClick={() => void copyReset()}
+                  className="shrink-0 rounded border border-[#dcd2bf] bg-[#fbf8f1] px-2 py-1 text-[10px] font-bold text-[#4d473d] hover:border-ink hover:text-ink"
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <ol start={2} className="mt-2 list-decimal space-y-1 pl-4">
+                <li>Quit OmniDesk and open it again.</li>
+                <li>Press Open settings above, then turn on the new OmniDesk switch.</li>
+                <li>For Screen Recording, quit and reopen OmniDesk once more.</li>
+              </ol>
+            </details>
+          )}
 
           <div>
             <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-[#756d5f]">
