@@ -6,6 +6,7 @@
  */
 
 import { getApiKey } from "./apiKey";
+import { candidateModels, usableVersion } from "./gemini";
 
 export type AgentAction =
   | { kind: "click"; x: number; y: number; right: boolean; count: number }
@@ -255,8 +256,13 @@ interface ApiResponse {
   promptFeedback?: { blockReason?: string };
 }
 
-const HOST = "https://generativelanguage.googleapis.com/v1beta/models";
-const FALLBACK_MODEL = "gemini-2.5-flash";
+const HOST = "https://generativelanguage.googleapis.com";
+
+/** Models that can look at an image and call functions. Others are skipped. */
+const canDrive = (m: string) => /^gemini-/.test(m) && !/embedding|aqa|tts|audio|image-generation|imagen|robotics|live|native-audio/.test(m);
+
+/** The model that worked last time, so later steps do not search again. */
+let workingModel = "";
 
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
@@ -301,46 +307,69 @@ export async function planStep(opts: PlanOptions): Promise<Step> {
     generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
   });
 
-  let model = opts.model;
+  // Use the models this key really has, like the chat does, starting with the chosen one.
+  const list = workingModel
+    ? [workingModel]
+    : (await candidateModels(opts.model, key, opts.signal)).filter(canDrive);
+  const models = list.length ? list : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
+  const version = usableVersion();
+
   let lastStatus = 0;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    let res: Response;
-    try {
-      res = await fetch(`${HOST}/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body,
-        signal: opts.signal,
-      });
-    } catch (e) {
-      if ((e as Error).name === "AbortError") throw e;
-      if (attempt === 3) throw new AgentError("Could not reach Google. Check your internet connection.");
-      await sleep(1500 * (attempt + 1), opts.signal);
-      continue;
-    }
+  let lastDetail = "";
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let res: Response;
+      try {
+        res = await fetch(`${HOST}/${version}/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body,
+          signal: opts.signal,
+        });
+      } catch (e) {
+        if ((e as Error).name === "AbortError") throw e;
+        if (attempt === 2) throw new AgentError("Could not reach Google. Check your internet connection.");
+        await sleep(1500 * (attempt + 1), opts.signal);
+        continue;
+      }
 
-    lastStatus = res.status;
-    if (res.ok) return readStep((await res.json()) as ApiResponse);
+      lastStatus = res.status;
+      if (res.ok) {
+        workingModel = model;
+        return readStep((await res.json()) as ApiResponse);
+      }
+      lastDetail = await res.text().catch(() => "");
 
-    const detail = await res.text().catch(() => "");
-    if (res.status === 404 && model !== FALLBACK_MODEL) {
-      model = FALLBACK_MODEL; // the chosen model may not exist for this key
-      continue;
+      if (res.status === 400 && /api key|API_KEY/i.test(lastDetail)) throw new AgentError("Google rejected your Gemini key.");
+      if (res.status === 401) throw new AgentError("Google rejected your Gemini key.");
+      if (res.status === 429 || res.status >= 500) {
+        if (attempt < 2) {
+          await sleep(2500 * (attempt + 1), opts.signal);
+          continue;
+        }
+      }
+      // 404, 403, a 400 about this model, or still busy: try the next model.
+      if (workingModel === model) workingModel = "";
+      break;
     }
-    if (res.status === 400 && /api key|API_KEY/i.test(detail)) throw new AgentError("Google rejected your Gemini key.");
-    if (res.status === 401 || res.status === 403) throw new AgentError("Google rejected your Gemini key or it cannot use this model.");
-    if (res.status === 429 || res.status >= 500) {
-      if (attempt === 3) break;
-      await sleep(2500 * (attempt + 1), opts.signal);
-      continue;
-    }
-    throw new AgentError(`Gemini returned an error (${res.status}). Try again in a moment.`);
   }
-  throw new AgentError(
-    lastStatus === 429
-      ? "Gemini is rate limiting this key. Wait a minute and try again."
-      : "Gemini is busy right now. Try again in a moment."
-  );
+
+  if (lastStatus === 429) throw new AgentError("Gemini is rate limiting this key. Wait a minute and try again.");
+  if (lastStatus >= 500) throw new AgentError("Gemini is busy right now. Try again in a moment.");
+  if (lastStatus === 404) throw new AgentError("None of the Gemini models on your key could do this. Try picking Gemini 2.5 Flash in the model menu.");
+  const why = (() => {
+    try {
+      return String(JSON.parse(lastDetail)?.error?.message ?? "").slice(0, 160);
+    } catch {
+      return "";
+    }
+  })();
+  throw new AgentError(`Gemini returned an error (${lastStatus})${why ? `: ${why}` : ""}.`);
+}
+
+/** Forget the remembered model, for example after the key changes. */
+export function resetAgentModel(): void {
+  workingModel = "";
 }
 
 export function readStep(data: ApiResponse): Step {

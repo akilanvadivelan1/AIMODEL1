@@ -95,6 +95,9 @@ let cachedKey = "";
 let cachedModels: string[] | null = null;
 let cachedVersion: string = API_VERSIONS[0];
 
+/** The API version that listed this key's models (v1beta unless only v1 worked). */
+export const usableVersion = () => cachedVersion;
+
 async function listUsableModels(key: string, signal?: AbortSignal): Promise<string[]> {
   if (cachedKey === key && cachedModels) return cachedModels;
 
@@ -143,7 +146,7 @@ function rank(m: string): number {
 }
 
 /** The preferred model first (if the key has it), then everything else, best first. */
-async function candidateModels(preferred: string, key: string, signal?: AbortSignal): Promise<string[]> {
+export async function candidateModels(preferred: string, key: string, signal?: AbortSignal): Promise<string[]> {
   const usable = await listUsableModels(key, signal);
 
   if (usable.length === 0) {
